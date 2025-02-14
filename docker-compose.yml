@@ -1,11 +1,9 @@
-version: "3.9"
-
 networks:
   fpb-net:
     driver: bridge
 
 volumes:
-  postgresql_data: 
+  postgresql_data:
     driver: local
 
 services:
@@ -33,8 +31,10 @@ services:
   postgresql:
     container_name: postgresql
     image: postgres:12.2-alpine
-    env_file:
-      - ".db.env"
+    environment:
+      - POSTGRES_USER=your_user
+      - POSTGRES_PASSWORD=your_password
+      - POSTGRES_DB=your_db
     volumes:
       - postgresql_data:/var/lib/postgresql/data
     ports:
