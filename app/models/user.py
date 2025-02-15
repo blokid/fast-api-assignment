@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, text
+from sqlalchemy import Boolean, Column, Integer, String, text
 
 from app.core import security
 from app.models.common import DateTimeModelMixin
@@ -15,6 +15,7 @@ class User(RWModel, DateTimeModelMixin):
     )
     username = Column(String(32), nullable=False, unique=True)
     email = Column(String(256), nullable=False, unique=True)
+    is_verified = Column(Boolean, nullable=False, default=False)
     salt = Column(String(255), nullable=False)
     hashed_password = Column(String(256), nullable=True)
 
