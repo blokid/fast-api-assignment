@@ -12,5 +12,16 @@ class DevAppSettings(AppSettings):
 
     # back-end app settings
     secret_key: SecretStr = SecretStr("secret-dev")
-    db_url: PostgresDsn = "postgresql+asyncpg://postgres:postgres@postgresql:5432/postgres"
+    db_url: PostgresDsn = (
+        "postgresql+asyncpg://postgres:postgres@postgresql:5432/postgres"
+    )
     logging_level: int = logging.DEBUG
+
+    # front-end app settings
+    frontend_url: str = "http://localhost:3000"
+
+    # mail settings
+    mail_username: str
+    mail_password: SecretStr
+    mail_port: int
+    mail_server: str

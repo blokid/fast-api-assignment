@@ -1,5 +1,6 @@
 from typing import Any
 
+from fastapi_mail.config import ConnectionConfig
 from pydantic import ConfigDict, SecretStr
 
 from app.core.settings.base import BaseAppSettings
@@ -26,6 +27,15 @@ class AppSettings(BaseAppSettings):
     auth_header_key: str = "Authorization"
     allowed_hosts: list[str] = ["*"]
 
+    # front-end app settings
+    frontend_url: str = "http://localhost:3000"
+
+    # mail settings
+    mail_username: str
+    mail_password: SecretStr
+    mail_port: int
+    mail_server: str
+
     @property
     def fastapi_kwargs(self) -> dict[str, Any]:
         return {
@@ -37,3 +47,15 @@ class AppSettings(BaseAppSettings):
             "title": self.title,
             "version": self.version,
         }
+
+    @property
+    def mail_config(self) -> ConnectionConfig:
+        return ConnectionConfig(
+            MAIL_USERNAME=self.mail_username,
+            MAIL_PASSWORD=self.mail_password,
+            MAIL_PORT=self.mail_port,
+            MAIL_SERVER=self.mail_server,
+            MAIL_STARTTLS=True,
+            MAIL_SSL_TLS=False,
+            MAIL_FROM=self.mail_username,
+        )
