@@ -4,8 +4,8 @@ from jose import JWTError, jwt
 from pydantic import ValidationError
 
 from app.models.user import User
-from app.schemas.token import TokenBase, TokenUser
-from app.schemas.user import UserTokenData
+from app.schemas.token import TokenBase, TokenUser, TokenVerify
+from app.schemas.user import UserTokenData, VerificationTokenData
 
 TOKEN_TYPE = "bearer"
 JWT_SUBJECT = "access"
@@ -28,13 +28,25 @@ def create_token(
 
 
 def create_token_for_user(user: User, secret_key: str) -> UserTokenData:
-    token_user_dict = TokenUser(id=user.id, username=user.username, email=user.email).model_dump()
+    token_user_dict = TokenUser(
+        id=user.id, username=user.username, email=user.email
+    ).model_dump()
     created_token = create_token(
         content=token_user_dict,
         secret_key=secret_key,
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     )
     return UserTokenData(access_token=created_token, token_type=TOKEN_TYPE)
+
+
+def create_verification_token(user: User, secret_key: str) -> VerificationTokenData:
+    verification_token_dict = TokenVerify(email=user.email).model_dump()
+    created_token = create_token(
+        content=verification_token_dict,
+        secret_key=secret_key,
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+    )
+    return VerificationTokenData(token=created_token)
 
 
 def get_user_from_token(token: str, secret_key: str) -> str:

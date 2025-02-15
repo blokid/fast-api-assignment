@@ -12,3 +12,7 @@ class TokenUser(BaseModel):
     id: int
     username: str
     email: str
+
+
+class TokenVerify(BaseModel):
+    email: str
