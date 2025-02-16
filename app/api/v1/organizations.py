@@ -57,3 +57,53 @@ async def create_organization(
     )
 
     return await handle_result(result)
+
+
+@router.get(
+    "/{organization_id}",
+    status_code=HTTP_200_OK,
+    response_model=OrganizationResponse,
+    responses=ERROR_RESPONSES,
+    name="organization:info",
+)
+async def read_organization(
+    *,
+    user: User = Depends(get_current_user_auth()),
+    organization_id: int,
+    orgs_service: OrganizationsService = Depends(get_service(OrganizationsService)),
+    orgs_repo: OrganizationsRepository = Depends(
+        get_repository(OrganizationsRepository)
+    ),
+):
+    result = await orgs_service.get_organization(
+        organization_id=organization_id,
+        orgs_repo=orgs_repo,
+        user=user,
+    )
+
+    return await handle_result(result)
+
+
+@router.delete(
+    "/{organization_id}",
+    status_code=HTTP_200_OK,
+    response_model=OrganizationResponse,
+    responses=ERROR_RESPONSES,
+    name="organization:delete",
+)
+async def delete_organization(
+    *,
+    user: User = Depends(get_current_user_auth()),
+    organization_id: int,
+    orgs_service: OrganizationsService = Depends(get_service(OrganizationsService)),
+    orgs_repo: OrganizationsRepository = Depends(
+        get_repository(OrganizationsRepository)
+    ),
+):
+    result = await orgs_service.delete_organization(
+        organization_id=organization_id,
+        orgs_repo=orgs_repo,
+        user=user,
+    )
+
+    return await handle_result(result)

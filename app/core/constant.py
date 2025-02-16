@@ -25,6 +25,7 @@ FAIL_VALIDATION_MATCHED_USER_ID = "No user matched with ID."
 FAIL_VALIDATION_MATCHED_FILTERED_USERS = "There are no user lists matched filter."
 FAIL_NO_ORGANIZATION = "No organization found."
 FAIL_VALIDATION_ORGANIZATION_DUPLICATED = "There is a duplicate organization already."
+FAIL_NOT_ALLOWED = "You are not allowed for this operation."
 
 FAIL_AUTH_CHECK = "Authentication required."
 FAIL_AUTH_INVALID_TOKEN_PREFIX = "Invalid Token prefix."
