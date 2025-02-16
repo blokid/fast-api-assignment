@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import Depends
+from fastapi import BackgroundTasks, Depends
 from fastapi.encoders import jsonable_encoder
 from starlette.status import (
     HTTP_200_OK,
@@ -14,6 +14,7 @@ from app.api.dependencies.users import get_users_filters
 from app.core import constant, token
 from app.database.repositories.users import UsersRepository
 from app.models.user import User
+from app.schemas.token import TokenVerify
 from app.schemas.user import (
     UserAuthOutData,
     UserInCreate,
@@ -22,9 +23,15 @@ from app.schemas.user import (
     UserOutData,
     UserResponse,
     UsersFilters,
+    VerificationTokenData,
 )
 from app.services.base import BaseService
-from app.utils import ServiceResult, response_4xx, return_service
+from app.utils import (
+    ServiceResult,
+    response_4xx,
+    return_service,
+    send_verification_email,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +83,9 @@ class UsersService(BaseService):
         users_filters: UsersFilters = Depends(get_users_filters),
         users_repo: UsersRepository = Depends(get_repository(UsersRepository)),
     ) -> UserResponse:
-        users = await users_repo.get_filtered_users(skip=users_filters.skip, limit=users_filters.limit)
+        users = await users_repo.get_filtered_users(
+            skip=users_filters.skip, limit=users_filters.limit
+        )
 
         if not users:
             return response_4xx(
@@ -88,7 +97,9 @@ class UsersService(BaseService):
             status_code=HTTP_200_OK,
             content={
                 "message": constant.SUCCESS_GET_USERS,
-                "data": jsonable_encoder([UserOutData.model_validate(user) for user in users]),
+                "data": jsonable_encoder(
+                    [UserOutData.model_validate(user) for user in users]
+                ),
             },
         )
 
@@ -96,6 +107,7 @@ class UsersService(BaseService):
     async def signup_user(
         self,
         user_in: UserInCreate,
+        background_tasks: BackgroundTasks,
         users_repo: UsersRepository = Depends(get_repository(UsersRepository)),
         secret_key: str = "",
     ) -> UserResponse:
@@ -108,19 +120,32 @@ class UsersService(BaseService):
             )
 
         created_user = await users_repo.signup_user(user_in=user_in)
-        created_token = token.create_token_for_user(user=created_user, secret_key=secret_key)
-
-        user_data_with_auth = UserAuthOutData.model_validate(created_user)
-
-        user_data_with_auth.token = created_token
-
+        verification_token: VerificationTokenData = token.create_verification_token(
+            user=created_user, secret_key=secret_key
+        )
+        background_tasks.add_task(
+            send_verification_email, email=created_user.email, token=verification_token
+        )
         return dict(
             status_code=HTTP_201_CREATED,
-            content={
-                "message": constant.SUCCESS_SIGN_UP,
-                "data": jsonable_encoder(user_data_with_auth),
-            },
+            content={"message": constant.SUCCESS_VERIFICATION_EMAIL, "data": {}},
         )
+
+        # created_token = token.create_token_for_user(
+        #     user=created_user, secret_key=secret_key
+        # )
+
+        # user_data_with_auth = UserAuthOutData.model_validate(created_user)
+
+        # user_data_with_auth.token = created_token
+
+        # return dict(
+        #     status_code=HTTP_201_CREATED,
+        #     content={
+        #         "message": constant.SUCCESS_SIGN_UP,
+        #         "data": jsonable_encoder(user_data_with_auth),
+        #     },
+        # )
 
     @return_service
     async def signin_user(
@@ -137,7 +162,9 @@ class UsersService(BaseService):
                 context={"reason": constant.FAIL_VALIDATION_MATCHED_USER_EMAIL},
             )
 
-        validation_password = await users_repo.get_user_password_validation(user=searched_user, password=user_in.password)
+        validation_password = await users_repo.get_user_password_validation(
+            user=searched_user, password=user_in.password
+        )
         if not validation_password:
             return response_4xx(
                 status_code=HTTP_400_BAD_REQUEST,
@@ -150,7 +177,9 @@ class UsersService(BaseService):
                 context={"reason": constant.FAIL_VALIDATION_USER_DELETED},
             )
 
-        created_token = token.create_token_for_user(user=searched_user, secret_key=secret_key)
+        created_token = token.create_token_for_user(
+            user=searched_user, secret_key=secret_key
+        )
         user_data_with_auth = UserAuthOutData.model_validate(searched_user)
 
         user_data_with_auth.token = created_token

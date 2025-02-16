@@ -3,6 +3,7 @@
 # SUCCESS
 SUCCESS_SIGN_IN = "Signed in successfully."
 SUCCESS_SIGN_UP = "Signed up successfully."
+SUCCESS_VERIFICATION_EMAIL = "Verification email sent."
 SUCCESS_GET_USERS = "Filtered users."
 SUCCESS_MATCHED_USER_ID = "The user who matched with ID."
 SUCCESS_MATCHED_USER_TOKEN = "The user who matched with token."

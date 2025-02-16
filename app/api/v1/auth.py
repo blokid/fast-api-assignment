@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
 from app.api.dependencies.auth import get_current_user_auth
@@ -50,12 +50,18 @@ async def signup_user(
     users_repo: UsersRepository = Depends(get_repository(UsersRepository)),
     user_in: UserInCreate,
     settings: AppSettings = Depends(get_app_settings),
+    background_tasks: BackgroundTasks,
 ) -> ServiceResult:
     """
     Signup new users.
     """
     secret_key = str(settings.secret_key.get_secret_value())
-    result = await users_service.signup_user(users_repo=users_repo, user_in=user_in, secret_key=secret_key)
+    result = await users_service.signup_user(
+        users_repo=users_repo,
+        user_in=user_in,
+        background_tasks=background_tasks,
+        secret_key=secret_key,
+    )
 
     return await handle_result(result)
 
@@ -78,6 +84,8 @@ async def signin_user(
     Create new users.
     """
     secret_key = str(settings.secret_key.get_secret_value())
-    result = await users_service.signin_user(users_repo=users_repo, user_in=user_in, secret_key=secret_key)
+    result = await users_service.signin_user(
+        users_repo=users_repo, user_in=user_in, secret_key=secret_key
+    )
 
     return await handle_result(result)

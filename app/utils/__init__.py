@@ -7,6 +7,7 @@ from .app_exceptions import (
     response_5xx,
 )
 from .custom_logging import CustomizeLogger
+from .email import send_verification_email
 from .request_exceptions import (
     http_exception_handler,
     request_validation_exception_handler,
