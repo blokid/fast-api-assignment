@@ -24,13 +24,10 @@ class Organization(RWModel, DateTimeModelMixin):
 class OrganizationUser(RWModel, DateTimeModelMixin):
     __tablename__ = "organization_users"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        server_default=text("nextval('organization_users_id_seq'::regclass)"),
+    organization_id = Column(
+        Integer, ForeignKey("organizations.id"), nullable=False, primary_key=True
     )
-    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, primary_key=True)
     role = Column(String(16), nullable=False)
 
     # relationships

@@ -57,6 +57,7 @@ def _create_organization_table() -> None:
         ),
         sa.Column("user_id", sa.Integer(), sa.ForeignKey("users.id"), primary_key=True),
         sa.Column("role", sa.String(length=16), nullable=False),
+        *_timestamps(),
     )
 
 
