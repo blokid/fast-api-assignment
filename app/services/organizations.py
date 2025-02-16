@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import Depends
+from fastapi import BackgroundTasks, Depends
 from fastapi.encoders import jsonable_encoder
 from starlette.status import (
     HTTP_200_OK,
@@ -11,16 +11,18 @@ from starlette.status import (
 )
 
 from app.api.dependencies.database import get_repository
-from app.core import constant
+from app.core import constant, token
 from app.database.repositories.organizations import OrganizationsRepository
-from app.models.user import User
+from app.models import OrganizationInvite, User
 from app.schemas.organization import (
     OrganizationInCreate,
+    OrganizationInviteIn,
     OrganizationOutData,
     OrganizationResponse,
 )
 from app.services.base import BaseService
 from app.utils import (
+    email,
     response_4xx,
     return_service,
 )
@@ -148,5 +150,54 @@ class OrganizationsService(BaseService):
             status_code=HTTP_200_OK,
             content={
                 "message": constant.SUCCESS_DELETE_ORGANIZATION,
+            },
+        )
+
+    @return_service
+    async def invite_to_organization(
+        self,
+        user: User,
+        organization_id: int,
+        background_tasks: BackgroundTasks,
+        secret_key: str,
+        invite_in: OrganizationInviteIn,
+        orgs_repo: OrganizationsRepository = Depends(
+            get_repository(OrganizationsRepository)
+        ),
+    ) -> OrganizationResponse:
+        organization = await orgs_repo.get_organization_by_id(
+            organization_id=organization_id
+        )
+
+        if not organization:
+            return response_4xx(
+                status_code=HTTP_404_NOT_FOUND,
+                context={"reason": constant.FAIL_NO_ORGANIZATION},
+            )
+        if not await user.is_admin_of(organization.id):
+            return response_4xx(
+                status_code=HTTP_403_FORBIDDEN,
+                context={"reason": constant.FAIL_NOT_ALLOWED},
+            )
+
+        invite: OrganizationInvite = await orgs_repo.invite_to_organization(
+            organization=organization,
+            email=invite_in.email,
+            role=invite_in.role,
+        )
+        created_token = token.create_org_invitation_token(
+            invite=invite, secret_key=secret_key
+        )
+        background_tasks.add_task(
+            email.send_invitation_email,
+            invite=invite,
+            token=created_token.token,
+        )
+
+        return dict(
+            status_code=HTTP_200_OK,
+            content={
+                "message": constant.SUCCESS_INVITATION_EMAIL,
+                "data": {},
             },
         )
