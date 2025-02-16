@@ -3,8 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from app.core import constant
 from app.database.repositories.base import BaseRepository, db_error_handler
-from app.models.organization import Organization, OrganizationUser
-from app.models.user import User
+from app.models import Organization, OrganizationInvite, OrganizationUser, User
 from app.schemas.organization import OrganizationInCreate, OrganizationInUpdate
 
 
@@ -77,3 +76,25 @@ class OrganizationsRepository(BaseRepository):
         await self.connection.commit()
         await self.connection.refresh(organization)
         return organization
+
+    @db_error_handler
+    async def invite_to_organization(
+        self, *, organization: Organization, email: str, role: str
+    ) -> OrganizationInvite:
+        invite = OrganizationInvite(email=email, role=role)
+        org_invites = await organization.awaitable_attrs.invites
+        org_invites.append(invite)
+        self.connection.add(organization)
+        await self.connection.commit()
+        await self.connection.refresh(organization)
+        return invite
+
+    @db_error_handler
+    async def delete_organization_invite(
+        self, *, invite: OrganizationInvite
+    ) -> OrganizationInvite:
+        invite.deleted_at = func.now()
+        self.connection.add(invite)
+        await self.connection.commit()
+        await self.connection.refresh(invite)
+        return invite
