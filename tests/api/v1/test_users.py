@@ -12,7 +12,7 @@ from starlette.status import (
     HTTP_404_NOT_FOUND,
 )
 
-from app.core import settings
+from app.core import settings, token
 from app.core.constant import (
     FAIL_VALIDATION_MATCHED_USER_EMAIL,
     FAIL_VALIDATION_MATCHED_USER_ID,
@@ -23,9 +23,11 @@ from app.core.constant import (
     SUCCESS_MATCHED_USER_ID,
     SUCCESS_MATCHED_USER_TOKEN,
     SUCCESS_SIGN_IN,
-    SUCCESS_SIGN_UP,
     SUCCESS_UPDATE_USER,
+    SUCCESS_VERIFICATION_EMAIL,
+    SUCCESS_VERIFY_USER,
 )
+from app.schemas.user import UserBase, VerificationTokenData
 
 environ["APP_ENV"] = "test"
 
@@ -40,21 +42,35 @@ async def test_signup(
 ) -> None:
     response = await client.post(app.url_path_for("auth:signup"), json=random_user)
     result = response.json()
-    created_user = result.get("data")
+    assert result.get("message") == SUCCESS_VERIFICATION_EMAIL
+    assert result.get("data") == {}
     assert response.status_code == HTTP_201_CREATED
-    assert result.get("message") == SUCCESS_SIGN_UP
-    assert created_user.get("username") == random_user.get("username")
-    assert created_user.get("email") == random_user.get("email")
-
-    created_random_user["id"] = created_user.get("id")
 
 
-async def test_signup_duplicate_user(app: FastAPI, client: AsyncClient, random_user: dict[str, str]) -> None:
+async def test_signup_duplicate_user(
+    app: FastAPI, client: AsyncClient, random_user: dict[str, str]
+) -> None:
     response = await client.post(app.url_path_for("auth:signup"), json=random_user)
     result = response.json()
     assert response.status_code == HTTP_400_BAD_REQUEST
     assert result.get("app_exception") == "Response4XX"
     assert result["context"].get("reason") == FAIL_VALIDATION_USER_DUPLICATED
+
+
+async def test_verification_email(
+    app: FastAPI, client: AsyncClient, created_random_user: dict[str, str]
+) -> None:
+    verification_token: VerificationTokenData = token.create_verification_token(
+        user=UserBase(**created_random_user),
+        secret_key=settings.secret_key.get_secret_value(),
+    )
+    response = await client.post(
+        app.url_path_for("auth:verify"), json={"token": verification_token.token}
+    )
+    result = response.json()
+    created_random_user["id"] = result.get("data").get("id")
+    assert response.status_code == HTTP_200_OK
+    assert result["message"] == SUCCESS_VERIFY_USER
 
 
 async def test_signin_error(
@@ -81,8 +97,12 @@ async def test_signin_error(
     assert result["context"].get("reason") == FAIL_VALIDATION_USER_WRONG_PASSWORD
 
 
-async def test_signin(app: FastAPI, client: AsyncClient, created_random_user: dict[str, str]) -> None:
-    response = await client.post(app.url_path_for("auth:signin"), json=created_random_user)
+async def test_signin(
+    app: FastAPI, client: AsyncClient, created_random_user: dict[str, str]
+) -> None:
+    response = await client.post(
+        app.url_path_for("auth:signin"), json=created_random_user
+    )
     result = response.json()
     token = result.get("data").get("token")
 
@@ -94,7 +114,9 @@ async def test_signin(app: FastAPI, client: AsyncClient, created_random_user: di
     created_random_user["token"] = token
 
 
-async def test_auth_info(app: FastAPI, client: AsyncClient, created_random_user: dict[str, str]) -> None:
+async def test_auth_info(
+    app: FastAPI, client: AsyncClient, created_random_user: dict[str, str]
+) -> None:
     headers = {
         "Authorization": f"{settings.jwt_token_prefix} {created_random_user.get('token').get('access_token')}",
         **client.headers,
@@ -120,7 +142,9 @@ async def test_all_user(app: FastAPI, client: AsyncClient) -> None:
     assert isinstance(result.get("data"), list)
 
 
-async def test_user_by_id(app: FastAPI, client: AsyncClient, created_random_user: dict[str, str]) -> None:
+async def test_user_by_id(
+    app: FastAPI, client: AsyncClient, created_random_user: dict[str, str]
+) -> None:
     headers = {
         "Authorization": f"{settings.jwt_token_prefix} {created_random_user.get('token').get('access_token')}",
         **client.headers,
@@ -138,7 +162,9 @@ async def test_user_by_id(app: FastAPI, client: AsyncClient, created_random_user
     assert result.get("data").get("email") == created_random_user.get("email")
 
 
-async def test_user_by_id_error(app: FastAPI, client: AsyncClient, created_random_user: dict[str, str]) -> None:
+async def test_user_by_id_error(
+    app: FastAPI, client: AsyncClient, created_random_user: dict[str, str]
+) -> None:
     headers = {
         "Authorization": f"{settings.jwt_token_prefix} {created_random_user.get('token').get('access_token')}",
         **client.headers,
@@ -154,7 +180,9 @@ async def test_user_by_id_error(app: FastAPI, client: AsyncClient, created_rando
     assert result["context"].get("reason") == FAIL_VALIDATION_MATCHED_USER_ID
 
 
-async def test_update_user(app: FastAPI, client: AsyncClient, created_random_user: dict[str, str]) -> None:
+async def test_update_user(
+    app: FastAPI, client: AsyncClient, created_random_user: dict[str, str]
+) -> None:
     headers = {
         "Authorization": f"{settings.jwt_token_prefix} {created_random_user.get('token').get('access_token')}",
         **client.headers,
@@ -178,12 +206,16 @@ async def test_update_user(app: FastAPI, client: AsyncClient, created_random_use
     assert result.get("data").get("email") == update_user.get("email")
 
 
-async def test_delete_user(app: FastAPI, client: AsyncClient, created_random_user: dict[str, str]) -> None:
+async def test_delete_user(
+    app: FastAPI, client: AsyncClient, created_random_user: dict[str, str]
+) -> None:
     headers = {
         "Authorization": f"{settings.jwt_token_prefix} {created_random_user.get('token').get('access_token')}",
         **client.headers,
     }
-    response = await client.delete(app.url_path_for("user:delete-by-id"), headers=headers)
+    response = await client.delete(
+        app.url_path_for("user:delete-by-id"), headers=headers
+    )
 
     result = response.json()
     assert response.status_code == HTTP_200_OK
