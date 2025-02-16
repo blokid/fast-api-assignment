@@ -61,7 +61,7 @@ class UserTokenData(BaseModel):
 
 
 class VerificationTokenData(BaseModel):
-    token: str | None = None
+    token: str
 
 
 class UserAuthOutData(UserBase):

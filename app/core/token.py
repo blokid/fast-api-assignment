@@ -58,3 +58,14 @@ def get_user_from_token(token: str, secret_key: str) -> str:
         raise ValueError("unable to decode") from decode_error
     except ValidationError as validation_error:
         raise ValueError("invalid token") from validation_error
+
+
+def get_email_from_token(token: str, secret_key: str) -> TokenVerify:
+    try:
+        decoded_email = jwt.decode(token, secret_key, algorithms=ALGORITHM)
+        return TokenVerify(**decoded_email)
+
+    except JWTError as decode_error:
+        raise ValueError("unable to decode") from decode_error
+    except ValidationError as validation_error:
+        raise ValueError("invalid token") from validation_error

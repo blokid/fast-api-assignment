@@ -86,6 +86,15 @@ class UsersRepository(BaseRepository):
         return user
 
     @db_error_handler
+    async def verify_user(self, *, user: User) -> User:
+        user.is_verified = True
+
+        self.connection.add(user)
+        await self.connection.commit()
+        await self.connection.refresh(user)
+        return user
+
+    @db_error_handler
     async def delete_user(self, *, user: User) -> User:
         user.deleted_at = func.now()
 

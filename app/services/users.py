@@ -14,7 +14,6 @@ from app.api.dependencies.users import get_users_filters
 from app.core import constant, token
 from app.database.repositories.users import UsersRepository
 from app.models.user import User
-from app.schemas.token import TokenVerify
 from app.schemas.user import (
     UserAuthOutData,
     UserInCreate,
@@ -131,21 +130,36 @@ class UsersService(BaseService):
             content={"message": constant.SUCCESS_VERIFICATION_EMAIL, "data": {}},
         )
 
-        # created_token = token.create_token_for_user(
-        #     user=created_user, secret_key=secret_key
-        # )
+    @return_service
+    async def verify_user(
+        self,
+        token_in: VerificationTokenData,
+        users_repo: UsersRepository = Depends(get_repository(UsersRepository)),
+        secret_key: str = "",
+    ) -> UserResponse:
+        decoded_email = token.get_email_from_token(
+            token=token_in.token, secret_key=secret_key
+        )
+        verified_user = await users_repo.get_user_by_email(email=decoded_email.email)
+        if not verified_user:
+            return response_4xx(
+                status_code=HTTP_400_BAD_REQUEST,
+                context={"reason": constant.FAIL_VALIDATION_MATCHED_USER_EMAIL},
+            )
+        await users_repo.verify_user(user=verified_user)
+        created_token = token.create_token_for_user(
+            user=verified_user, secret_key=secret_key
+        )
+        users_data_with_auth = UserAuthOutData.model_validate(verified_user)
+        users_data_with_auth.token = created_token
 
-        # user_data_with_auth = UserAuthOutData.model_validate(created_user)
-
-        # user_data_with_auth.token = created_token
-
-        # return dict(
-        #     status_code=HTTP_201_CREATED,
-        #     content={
-        #         "message": constant.SUCCESS_SIGN_UP,
-        #         "data": jsonable_encoder(user_data_with_auth),
-        #     },
-        # )
+        return dict(
+            status_code=HTTP_200_OK,
+            content={
+                "message": constant.SUCCESS_VERIFY_USER,
+                "data": jsonable_encoder(users_data_with_auth),
+            },
+        )
 
     @return_service
     async def signin_user(

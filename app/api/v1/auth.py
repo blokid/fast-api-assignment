@@ -8,7 +8,12 @@ from app.core.config import get_app_settings
 from app.core.settings.app import AppSettings
 from app.database.repositories.users import UsersRepository
 from app.models.user import User
-from app.schemas.user import UserInCreate, UserInSignIn, UserResponse
+from app.schemas.user import (
+    UserInCreate,
+    UserInSignIn,
+    UserResponse,
+    VerificationTokenData,
+)
 from app.services.users import UsersService
 from app.utils import ERROR_RESPONSES, ServiceResult, handle_result
 
@@ -61,6 +66,31 @@ async def signup_user(
         user_in=user_in,
         background_tasks=background_tasks,
         secret_key=secret_key,
+    )
+
+    return await handle_result(result)
+
+
+@router.post(
+    path="/verify",
+    status_code=HTTP_200_OK,
+    response_model=UserResponse,
+    responses=ERROR_RESPONSES,
+    name="auth:verify",
+)
+async def verify_user(
+    *,
+    users_service: UsersService = Depends(get_service(UsersService)),
+    users_repo: UsersRepository = Depends(get_repository(UsersRepository)),
+    token: VerificationTokenData,
+    settings: AppSettings = Depends(get_app_settings),
+) -> ServiceResult:
+    """
+    Verify user email.
+    """
+    secret_key = str(settings.secret_key.get_secret_value())
+    result = await users_service.verify_user(
+        users_repo=users_repo, token_in=token, secret_key=secret_key
     )
 
     return await handle_result(result)
