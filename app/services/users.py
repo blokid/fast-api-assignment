@@ -161,6 +161,11 @@ class UsersService(BaseService):
                 status_code=HTTP_400_BAD_REQUEST,
                 context={"reason": constant.FAIL_VALIDATION_MATCHED_USER_EMAIL},
             )
+        if not searched_user.is_verified:
+            return response_4xx(
+                status_code=HTTP_400_BAD_REQUEST,
+                context={"reason": constant.FAIL_VALIDATION_USER_NOT_VERIFIED},
+            )
 
         validation_password = await users_repo.get_user_password_validation(
             user=searched_user, password=user_in.password
