@@ -1,7 +1,8 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, text
+import uuid
+
+from sqlalchemy import Column, ForeignKey, Integer, String, text
 from sqlalchemy.orm import relationship
 
-from app.core import security
 from app.models.common import DateTimeModelMixin
 from app.models.rwmodel import RWModel
 
@@ -19,6 +20,10 @@ class Organization(RWModel, DateTimeModelMixin):
 
     # relationships
     users = relationship("OrganizationUser", back_populates="organization")
+
+    @staticmethod
+    def generate_random_name() -> str:
+        return str(uuid.uuid4()).replace("-", "")[:10]
 
 
 class OrganizationUser(RWModel, DateTimeModelMixin):

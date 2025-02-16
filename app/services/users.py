@@ -12,8 +12,10 @@ from starlette.status import (
 from app.api.dependencies.database import get_repository
 from app.api.dependencies.users import get_users_filters
 from app.core import constant, token
+from app.database.repositories.organizations import OrganizationsRepository
 from app.database.repositories.users import UsersRepository
-from app.models.user import User
+from app.models import Organization, User
+from app.schemas.organization import OrganizationInCreate
 from app.schemas.user import (
     UserAuthOutData,
     UserInCreate,
@@ -108,6 +110,9 @@ class UsersService(BaseService):
         user_in: UserInCreate,
         background_tasks: BackgroundTasks,
         users_repo: UsersRepository = Depends(get_repository(UsersRepository)),
+        orgs_repo: OrganizationsRepository = Depends(
+            get_repository(OrganizationsRepository)
+        ),
         secret_key: str = "",
     ) -> UserResponse:
         duplicate_user = await users_repo.get_duplicated_user(user_in=user_in)
@@ -121,6 +126,10 @@ class UsersService(BaseService):
         created_user = await users_repo.signup_user(user_in=user_in)
         verification_token: VerificationTokenData = token.create_verification_token(
             user=created_user, secret_key=secret_key
+        )
+        await orgs_repo.create_organization(
+            org_in=OrganizationInCreate(name=Organization.generate_random_name()),
+            user=created_user,
         )
         background_tasks.add_task(
             send_verification_email, email=created_user.email, token=verification_token
