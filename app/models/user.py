@@ -1,12 +1,13 @@
 from sqlalchemy import Boolean, Column, Integer, String, text
+from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import relationship
 
-from app.core import security
+from app.core import constant, security
 from app.models.common import DateTimeModelMixin
 from app.models.rwmodel import RWModel
 
 
-class User(RWModel, DateTimeModelMixin):
+class User(AsyncAttrs, RWModel, DateTimeModelMixin):
     __tablename__ = "users"
 
     id = Column(
@@ -29,3 +30,15 @@ class User(RWModel, DateTimeModelMixin):
     def change_password(self, password: str) -> None:
         self.salt = security.generate_salt()
         self.hashed_password = security.get_password_hash(self.salt + password)
+
+    async def is_member_of(self, organization_id: int) -> bool:
+        orgs = await self.awaitable_attrs.organizations
+        return any(org.organization_id == organization_id for org in orgs)
+
+    async def is_admin_of(self, organization_id: int) -> bool:
+        orgs = await self.awaitable_attrs.organizations
+        return any(
+            org.organization_id == organization_id
+            and org.role == constant.ORGANIZATION_ADMIN
+            for org in orgs
+        )

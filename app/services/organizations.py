@@ -6,6 +6,7 @@ from starlette.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
 )
 
@@ -80,5 +81,72 @@ class OrganizationsService(BaseService):
                 "data": jsonable_encoder(
                     [OrganizationOutData.model_validate(org) for org in organizations]
                 ),
+            },
+        )
+
+    @return_service
+    async def get_organization(
+        self,
+        user: User,
+        organization_id: int,
+        orgs_repo: OrganizationsRepository = Depends(
+            get_repository(OrganizationsRepository)
+        ),
+    ) -> OrganizationResponse:
+        organization = await orgs_repo.get_organization_by_id(
+            organization_id=organization_id
+        )
+
+        if not organization:
+            return response_4xx(
+                status_code=HTTP_404_NOT_FOUND,
+                context={"reason": constant.FAIL_NO_ORGANIZATION},
+            )
+        if not await user.is_member_of(organization.id):
+            return response_4xx(
+                status_code=HTTP_403_FORBIDDEN,
+                context={"reason": constant.FAIL_NOT_ALLOWED},
+            )
+
+        return dict(
+            status_code=HTTP_200_OK,
+            content={
+                "message": constant.SUCCESS_GET_ORGANIZATION,
+                "data": jsonable_encoder(
+                    OrganizationOutData.model_validate(organization)
+                ),
+            },
+        )
+
+    @return_service
+    async def delete_organization(
+        self,
+        user: User,
+        organization_id: int,
+        orgs_repo: OrganizationsRepository = Depends(
+            get_repository(OrganizationsRepository)
+        ),
+    ) -> OrganizationResponse:
+        organization = await orgs_repo.get_organization_by_id(
+            organization_id=organization_id
+        )
+
+        if not organization:
+            return response_4xx(
+                status_code=HTTP_404_NOT_FOUND,
+                context={"reason": constant.FAIL_NO_ORGANIZATION},
+            )
+        if not await user.is_admin_of(organization.id):
+            return response_4xx(
+                status_code=HTTP_403_FORBIDDEN,
+                context={"reason": constant.FAIL_NOT_ALLOWED},
+            )
+
+        await orgs_repo.delete_organization(organization_id=organization_id)
+
+        return dict(
+            status_code=HTTP_200_OK,
+            content={
+                "message": constant.SUCCESS_DELETE_ORGANIZATION,
             },
         )
