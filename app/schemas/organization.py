@@ -41,3 +41,8 @@ class OrganizationResponse(ApiResponse):
     message: str = "Organization API Response"
     data: OrganizationOutData | list[OrganizationOutData]
     detail: dict[str, Any] | None = {"key": "val"}
+
+
+class OrganizationInviteIn(BaseModel):
+    email: str
+    role: str
