@@ -1,15 +1,36 @@
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from app.core import constant
 from app.database.repositories.base import BaseRepository, db_error_handler
-from app.models.organization import Organization
+from app.models.organization import Organization, OrganizationUser
 from app.models.user import User
-from app.schemas.organization import OrganizationInUpdate
+from app.schemas.organization import OrganizationInCreate, OrganizationInUpdate
 
 
 class OrganizationsRepository(BaseRepository):
     def __init__(self, conn: AsyncConnection) -> None:
         super().__init__(conn)
+
+    @db_error_handler
+    async def create_organization(
+        self, *, org_in: OrganizationInCreate, user: User
+    ) -> Organization:
+        organization = Organization(**org_in.model_dump())
+        organization.users.append(
+            OrganizationUser(role=constant.ORGANIZATION_ADMIN, user=user)
+        )
+        self.connection.add(organization)
+        await self.connection.commit()
+        await self.connection.refresh(organization)
+        return organization
+
+    @db_error_handler
+    async def get_organizations(self) -> list[Organization]:
+        query = select(Organization).where(Organization.deleted_at.is_(None))
+        raw_results = await self.connection.execute(query)
+        results = raw_results.scalars().all()
+        return results
 
     @db_error_handler
     async def get_organization_by_id(self, *, organization_id: int) -> Organization:
