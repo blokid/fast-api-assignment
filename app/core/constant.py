@@ -4,6 +4,7 @@
 SUCCESS_SIGN_IN = "Signed in successfully."
 SUCCESS_SIGN_UP = "Signed up successfully."
 SUCCESS_VERIFICATION_EMAIL = "Verification email sent."
+SUCCESS_INVITATION_EMAIL = "Invitation email sent."
 SUCCESS_GET_USERS = "Filtered users."
 SUCCESS_GET_ORGANIZATION = "Organization data."
 SUCCESS_CREATE_ORGANIZATION = "Created organization successfully."

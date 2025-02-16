@@ -16,3 +16,8 @@ class TokenUser(BaseModel):
 
 class TokenVerify(BaseModel):
     email: str
+
+
+class TokenInvite(BaseModel):
+    organization_id: int
+    email: str

@@ -3,9 +3,9 @@ from datetime import UTC, datetime, timedelta
 from jose import JWTError, jwt
 from pydantic import ValidationError
 
-from app.models.user import User
-from app.schemas.token import TokenBase, TokenUser, TokenVerify
-from app.schemas.user import UserTokenData, VerificationTokenData
+from app.models import OrganizationInvite, User
+from app.schemas.token import TokenBase, TokenInvite, TokenUser, TokenVerify
+from app.schemas.user import InvitationTokenData, UserTokenData, VerificationTokenData
 
 TOKEN_TYPE = "bearer"
 JWT_SUBJECT = "access"
@@ -47,6 +47,20 @@ def create_verification_token(user: User, secret_key: str) -> VerificationTokenD
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     )
     return VerificationTokenData(token=created_token)
+
+
+def create_org_invitation_token(
+    invite: OrganizationInvite, secret_key: str
+) -> InvitationTokenData:
+    invitation_token_dict = TokenInvite(
+        organization_id=invite.organization_id, email=invite.email
+    ).model_dump()
+    created_token = create_token(
+        content=invitation_token_dict,
+        secret_key=secret_key,
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+    )
+    return InvitationTokenData(token=created_token)
 
 
 def get_user_from_token(token: str, secret_key: str) -> str:

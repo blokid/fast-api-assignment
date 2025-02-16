@@ -64,6 +64,10 @@ class VerificationTokenData(BaseModel):
     token: str
 
 
+class InvitationTokenData(VerificationTokenData):
+    pass
+
+
 class UserAuthOutData(UserBase):
     token: UserTokenData | None = None
 
