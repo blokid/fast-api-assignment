@@ -1,4 +1,5 @@
 from sqlalchemy import Boolean, Column, Integer, String, text
+from sqlalchemy.orm import relationship
 
 from app.core import security
 from app.models.common import DateTimeModelMixin
@@ -18,6 +19,9 @@ class User(RWModel, DateTimeModelMixin):
     is_verified = Column(Boolean, nullable=False, default=False)
     salt = Column(String(255), nullable=False)
     hashed_password = Column(String(256), nullable=True)
+
+    # relationships
+    organizations = relationship("OrganizationUser", back_populates="user")
 
     def check_password(self, password: str) -> bool:
         return security.verify_password(self.salt + password, self.hashed_password)
