@@ -131,3 +131,12 @@ class OrganizationsRepository(BaseRepository):
         await self.connection.refresh(org_invite)
         await self.connection.refresh(organization)
         return org_invite
+
+    @db_error_handler
+    async def get_organization_users(self, *, organization_id: int):
+        query = select(OrganizationUser).where(
+            OrganizationUser.organization_id == organization_id
+        )
+        raw_results = await self.connection.execute(query)
+        results = raw_results.scalars().all()
+        return results

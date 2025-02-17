@@ -14,6 +14,7 @@ from app.schemas.organization import (
     OrganizationInviteIn,
     OrganizationResponse,
 )
+from app.schemas.organization_user import OrganizationUserResponse
 from app.schemas.user import InvitationTokenData
 from app.services.organizations import OrganizationsService
 from app.utils import ERROR_RESPONSES, ServiceResult, handle_result
@@ -190,5 +191,32 @@ async def accept_organization_invite(
         orgs_repo=orgs_repo,
         user_repo=user_repo,
         secret_key=secret_key,
+    )
+    return await handle_result(result)
+
+
+@router.get(
+    "/{organization_id}/users",
+    status_code=HTTP_200_OK,
+    response_model=OrganizationUserResponse,
+    responses=ERROR_RESPONSES,
+    name="organization:users",
+)
+async def get_organization_users(
+    *,
+    user: User = Depends(get_current_user_auth()),
+    organization_id: int,
+    orgs_service: OrganizationsService = Depends(get_service(OrganizationsService)),
+    orgs_repo: OrganizationsRepository = Depends(
+        get_repository(OrganizationsRepository)
+    ),
+) -> ServiceResult:
+    """
+    Get organization users.
+    """
+    result = await orgs_service.get_organization_users(
+        organization_id=organization_id,
+        orgs_repo=orgs_repo,
+        user=user,
     )
     return await handle_result(result)

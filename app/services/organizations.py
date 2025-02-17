@@ -14,13 +14,19 @@ from app.api.dependencies.database import get_repository
 from app.core import constant, token
 from app.database.repositories.organizations import OrganizationsRepository
 from app.database.repositories.users import UsersRepository
-from app.models import OrganizationInvite, OrganizationUser, User
+from app.models import Organization, OrganizationInvite, User
 from app.schemas.organization import (
     OrganizationInCreate,
     OrganizationInviteIn,
     OrganizationOutData,
     OrganizationResponse,
 )
+from app.schemas.organization_user import (
+    OrganizationUser,
+    OrganizationUserOutData,
+    OrganizationUserResponse,
+)
+from app.schemas.user import UserOutData
 from app.services.base import BaseService
 from app.utils import (
     email,
@@ -239,5 +245,51 @@ class OrganizationsService(BaseService):
                 "data": jsonable_encoder(
                     OrganizationOutData.model_validate(organization)
                 ),
+            },
+        )
+
+    @return_service
+    async def get_organization_users(
+        self,
+        user: User,
+        organization_id: int,
+        orgs_repo: OrganizationsRepository = Depends(
+            get_repository(OrganizationsRepository)
+        ),
+    ) -> OrganizationUserResponse:
+        organization: Organization = await orgs_repo.get_organization_by_id(
+            organization_id=organization_id
+        )
+        if not organization:
+            return response_4xx(
+                status_code=HTTP_404_NOT_FOUND,
+                context={"reason": constant.FAIL_NO_ORGANIZATION},
+            )
+        if not await user.is_member_of(organization.id):
+            return response_4xx(
+                status_code=HTTP_403_FORBIDDEN,
+                context={"reason": constant.FAIL_NOT_ALLOWED},
+            )
+        org_users = await orgs_repo.get_organization_users(
+            organization_id=organization_id
+        )
+        data_users = []
+        for org_user in org_users:
+            user_data = await org_user.awaitable_attrs.user
+            data_users.append(
+                OrganizationUser(
+                    **UserOutData.model_validate(user_data).model_dump(),
+                    role=org_user.role,
+                )
+            )
+        data = OrganizationUserOutData(
+            **OrganizationOutData.model_validate(organization).model_dump(),
+            users=data_users,
+        )
+        return dict(
+            status_code=HTTP_200_OK,
+            content={
+                "message": constant.SUCCESS_GET_ORGANIZATION,
+                "data": jsonable_encoder(data),
             },
         )

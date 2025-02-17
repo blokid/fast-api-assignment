@@ -28,7 +28,7 @@ class Organization(AsyncAttrs, RWModel, DateTimeModelMixin):
         return str(uuid.uuid4()).replace("-", "")[:10]
 
 
-class OrganizationUser(RWModel, DateTimeModelMixin):
+class OrganizationUser(AsyncAttrs, RWModel, DateTimeModelMixin):
     __tablename__ = "organization_users"
 
     organization_id = Column(
