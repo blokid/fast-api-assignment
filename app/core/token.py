@@ -4,7 +4,14 @@ from jose import JWTError, jwt
 from pydantic import ValidationError
 
 from app.models import OrganizationInvite, User
-from app.schemas.token import TokenBase, TokenInvite, TokenUser, TokenVerify
+from app.models.website import WebsiteInvite
+from app.schemas.token import (
+    TokenBase,
+    TokenInvite,
+    TokenInviteWebsite,
+    TokenUser,
+    TokenVerify,
+)
 from app.schemas.user import InvitationTokenData, UserTokenData, VerificationTokenData
 
 TOKEN_TYPE = "bearer"
@@ -54,6 +61,20 @@ def create_org_invitation_token(
 ) -> InvitationTokenData:
     invitation_token_dict = TokenInvite(
         organization_id=invite.organization_id, email=invite.email
+    ).model_dump()
+    created_token = create_token(
+        content=invitation_token_dict,
+        secret_key=secret_key,
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+    )
+    return InvitationTokenData(token=created_token)
+
+
+def create_website_invitation_token(
+    invite: WebsiteInvite, secret_key: str
+) -> InvitationTokenData:
+    invitation_token_dict = TokenInviteWebsite(
+        website_id=invite.website_id, email=invite.email
     ).model_dump()
     created_token = create_token(
         content=invitation_token_dict,
