@@ -98,3 +98,29 @@ class OrganizationsRepository(BaseRepository):
         await self.connection.commit()
         await self.connection.refresh(invite)
         return invite
+
+    @db_error_handler
+    async def get_organization_invite(
+        self, *, organization_id: int, email: str
+    ) -> OrganizationInvite:
+        query = (
+            select(OrganizationInvite)
+            .where(
+                and_(
+                    OrganizationInvite.organization_id == organization_id,
+                    OrganizationInvite.email == email,
+                )
+            )
+            .limit(1)
+        )
+        raw_result = await self.connection.execute(query)
+        result = raw_result.fetchone()
+        return result.OrganizationInvite if result is not None else result
+
+    @db_error_handler
+    async def accept_organization_invite(self, *, org_invite: OrganizationInvite):
+        org_invite.is_accepted = True
+        self.connection.add(org_invite)
+        await self.connection.commit()
+        await self.connection.refresh(org_invite)
+        return org_invite
