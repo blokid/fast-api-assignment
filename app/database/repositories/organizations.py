@@ -58,10 +58,10 @@ class OrganizationsRepository(BaseRepository):
 
     @db_error_handler
     async def update_organization(
-        self, *, organization: Organization, organization_in: OrganizationInUpdate
+        self, *, organization: Organization, org_in: OrganizationInUpdate
     ) -> Organization:
-        organization_in_obj = organization_in.model_dump(exclude_unset=True)
-        for key, val in organization_in_obj.items():
+        org_in_obj = org_in.model_dump(exclude_unset=True)
+        for key, val in org_in_obj.items():
             setattr(organization, key, val)
 
         self.connection.add(organization)

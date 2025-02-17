@@ -11,6 +11,7 @@ from app.database.repositories.users import UsersRepository
 from app.models.user import User
 from app.schemas.organization import (
     OrganizationInCreate,
+    OrganizationInUpdate,
     OrganizationInviteIn,
     OrganizationResponse,
 )
@@ -216,6 +217,35 @@ async def get_organization_users(
     """
     result = await orgs_service.get_organization_users(
         organization_id=organization_id,
+        orgs_repo=orgs_repo,
+        user=user,
+    )
+    return await handle_result(result)
+
+
+@router.patch(
+    "/{organization_id}",
+    status_code=HTTP_200_OK,
+    response_model=OrganizationResponse,
+    responses=ERROR_RESPONSES,
+    name="organization:update",
+)
+async def update_organization(
+    *,
+    user: User = Depends(get_current_user_auth()),
+    organization_id: int,
+    orgs_service: OrganizationsService = Depends(get_service(OrganizationsService)),
+    orgs_repo: OrganizationsRepository = Depends(
+        get_repository(OrganizationsRepository)
+    ),
+    org_in: OrganizationInUpdate,
+) -> ServiceResult:
+    """
+    Update organization.
+    """
+    result = await orgs_service.update_organization(
+        organization_id=organization_id,
+        org_in=org_in,
         orgs_repo=orgs_repo,
         user=user,
     )

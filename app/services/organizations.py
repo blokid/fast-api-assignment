@@ -17,6 +17,7 @@ from app.database.repositories.users import UsersRepository
 from app.models import Organization, OrganizationInvite, User
 from app.schemas.organization import (
     OrganizationInCreate,
+    OrganizationInUpdate,
     OrganizationInviteIn,
     OrganizationOutData,
     OrganizationResponse,
@@ -291,5 +292,39 @@ class OrganizationsService(BaseService):
             content={
                 "message": constant.SUCCESS_GET_ORGANIZATION,
                 "data": jsonable_encoder(data),
+            },
+        )
+
+    @return_service
+    async def update_organization(
+        self,
+        user: User,
+        organization_id: int,
+        org_in: OrganizationInUpdate,
+        orgs_repo: OrganizationsRepository = Depends(
+            get_repository(OrganizationsRepository)
+        ),
+    ) -> OrganizationResponse:
+        organization = await orgs_repo.get_organization_by_id(
+            organization_id=organization_id
+        )
+        if not organization or organization.deleted_at is not None:
+            return response_4xx(
+                status_code=HTTP_404_NOT_FOUND,
+                context={"reason": constant.FAIL_NO_ORGANIZATION},
+            )
+        if not await user.is_member_of(organization.id):
+            return response_4xx(
+                status_code=HTTP_403_FORBIDDEN,
+                context={"reason": constant.FAIL_NOT_ALLOWED},
+            )
+        await orgs_repo.update_organization(organization=organization, org_in=org_in)
+        return dict(
+            status_code=HTTP_200_OK,
+            content={
+                "message": constant.SUCCESS_UPDATE_ORGANIZATION,
+                "data": jsonable_encoder(
+                    OrganizationOutData.model_validate(organization)
+                ),
             },
         )
