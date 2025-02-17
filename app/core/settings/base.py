@@ -13,3 +13,7 @@ class BaseAppSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env")
 
     app_env: AppEnvTypes = AppEnvTypes.dev
+    mail_username: str
+    mail_password: str
+    mail_port: int
+    mail_server: str

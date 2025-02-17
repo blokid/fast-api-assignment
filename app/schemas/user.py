@@ -15,6 +15,7 @@ class UserBase(BaseModel):
     id: int | None = None
     username: str
     email: str
+    is_verified: bool = False
     created_at: datetime | None = None
     updated_at: datetime | None = None
     deleted_at: datetime | None = None
@@ -57,6 +58,14 @@ class UsersFilters(BaseModel):
 class UserTokenData(BaseModel):
     access_token: str | None = None
     token_type: str | None = None
+
+
+class VerificationTokenData(BaseModel):
+    token: str
+
+
+class InvitationTokenData(VerificationTokenData):
+    pass
 
 
 class UserAuthOutData(UserBase):

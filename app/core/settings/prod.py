@@ -12,5 +12,16 @@ class ProdAppSettings(AppSettings):
 
     # back-end app settings
     secret_key: SecretStr = SecretStr("secret-prod")
-    db_url: PostgresDsn = "postgresql+asyncpg://postgres:postgres@postgresql:5432/postgres"
+    db_url: PostgresDsn = (
+        "postgresql+asyncpg://postgres:postgres@postgresql:5432/postgres"
+    )
     logging_level: int = logging.INFO
+
+    # front-end app settings
+    frontend_url: str = "https://example.com"
+
+    # mail settings
+    mail_username: str
+    mail_password: SecretStr
+    mail_port: int
+    mail_server: str

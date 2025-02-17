@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import Depends
+from fastapi import BackgroundTasks, Depends
 from fastapi.encoders import jsonable_encoder
 from starlette.status import (
     HTTP_200_OK,
@@ -12,8 +12,15 @@ from starlette.status import (
 from app.api.dependencies.database import get_repository
 from app.api.dependencies.users import get_users_filters
 from app.core import constant, token
+from app.database.repositories.organizations import OrganizationsRepository
 from app.database.repositories.users import UsersRepository
-from app.models.user import User
+from app.models import Organization, User
+from app.schemas.organization import OrganizationInCreate, OrganizationOutData
+from app.schemas.organization_user import (
+    OrganizationUserResponse,
+    UserOrganization,
+    UserOrganizationOutData,
+)
 from app.schemas.user import (
     UserAuthOutData,
     UserInCreate,
@@ -22,9 +29,21 @@ from app.schemas.user import (
     UserOutData,
     UserResponse,
     UsersFilters,
+    VerificationTokenData,
+)
+from app.schemas.website import WebsiteOutData
+from app.schemas.website_user import (
+    UserWebsite,
+    UserWebsiteOutData,
+    WebsiteUserResponse,
 )
 from app.services.base import BaseService
-from app.utils import ServiceResult, response_4xx, return_service
+from app.utils import (
+    ServiceResult,
+    response_4xx,
+    return_service,
+    send_verification_email,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +95,9 @@ class UsersService(BaseService):
         users_filters: UsersFilters = Depends(get_users_filters),
         users_repo: UsersRepository = Depends(get_repository(UsersRepository)),
     ) -> UserResponse:
-        users = await users_repo.get_filtered_users(skip=users_filters.skip, limit=users_filters.limit)
+        users = await users_repo.get_filtered_users(
+            skip=users_filters.skip, limit=users_filters.limit
+        )
 
         if not users:
             return response_4xx(
@@ -88,7 +109,9 @@ class UsersService(BaseService):
             status_code=HTTP_200_OK,
             content={
                 "message": constant.SUCCESS_GET_USERS,
-                "data": jsonable_encoder([UserOutData.model_validate(user) for user in users]),
+                "data": jsonable_encoder(
+                    [UserOutData.model_validate(user) for user in users]
+                ),
             },
         )
 
@@ -96,7 +119,11 @@ class UsersService(BaseService):
     async def signup_user(
         self,
         user_in: UserInCreate,
+        background_tasks: BackgroundTasks,
         users_repo: UsersRepository = Depends(get_repository(UsersRepository)),
+        orgs_repo: OrganizationsRepository = Depends(
+            get_repository(OrganizationsRepository)
+        ),
         secret_key: str = "",
     ) -> UserResponse:
         duplicate_user = await users_repo.get_duplicated_user(user_in=user_in)
@@ -108,17 +135,49 @@ class UsersService(BaseService):
             )
 
         created_user = await users_repo.signup_user(user_in=user_in)
-        created_token = token.create_token_for_user(user=created_user, secret_key=secret_key)
-
-        user_data_with_auth = UserAuthOutData.model_validate(created_user)
-
-        user_data_with_auth.token = created_token
-
+        verification_token: VerificationTokenData = token.create_verification_token(
+            user=created_user, secret_key=secret_key
+        )
+        await orgs_repo.create_organization(
+            org_in=OrganizationInCreate(name=Organization.generate_random_name()),
+            user=created_user,
+        )
+        background_tasks.add_task(
+            send_verification_email, email=created_user.email, token=verification_token
+        )
         return dict(
             status_code=HTTP_201_CREATED,
+            content={"message": constant.SUCCESS_VERIFICATION_EMAIL, "data": {}},
+        )
+
+    @return_service
+    async def verify_user(
+        self,
+        token_in: VerificationTokenData,
+        users_repo: UsersRepository = Depends(get_repository(UsersRepository)),
+        secret_key: str = "",
+    ) -> UserResponse:
+        decoded_email = token.get_email_from_token(
+            token=token_in.token, secret_key=secret_key
+        )
+        verified_user = await users_repo.get_user_by_email(email=decoded_email.email)
+        if not verified_user:
+            return response_4xx(
+                status_code=HTTP_400_BAD_REQUEST,
+                context={"reason": constant.FAIL_VALIDATION_MATCHED_USER_EMAIL},
+            )
+        await users_repo.verify_user(user=verified_user)
+        created_token = token.create_token_for_user(
+            user=verified_user, secret_key=secret_key
+        )
+        users_data_with_auth = UserAuthOutData.model_validate(verified_user)
+        users_data_with_auth.token = created_token
+
+        return dict(
+            status_code=HTTP_200_OK,
             content={
-                "message": constant.SUCCESS_SIGN_UP,
-                "data": jsonable_encoder(user_data_with_auth),
+                "message": constant.SUCCESS_VERIFY_USER,
+                "data": jsonable_encoder(users_data_with_auth),
             },
         )
 
@@ -136,8 +195,15 @@ class UsersService(BaseService):
                 status_code=HTTP_400_BAD_REQUEST,
                 context={"reason": constant.FAIL_VALIDATION_MATCHED_USER_EMAIL},
             )
+        if not searched_user.is_verified:
+            return response_4xx(
+                status_code=HTTP_400_BAD_REQUEST,
+                context={"reason": constant.FAIL_VALIDATION_USER_NOT_VERIFIED},
+            )
 
-        validation_password = await users_repo.get_user_password_validation(user=searched_user, password=user_in.password)
+        validation_password = await users_repo.get_user_password_validation(
+            user=searched_user, password=user_in.password
+        )
         if not validation_password:
             return response_4xx(
                 status_code=HTTP_400_BAD_REQUEST,
@@ -150,7 +216,9 @@ class UsersService(BaseService):
                 context={"reason": constant.FAIL_VALIDATION_USER_DELETED},
             )
 
-        created_token = token.create_token_for_user(user=searched_user, secret_key=secret_key)
+        created_token = token.create_token_for_user(
+            user=searched_user, secret_key=secret_key
+        )
         user_data_with_auth = UserAuthOutData.model_validate(searched_user)
 
         user_data_with_auth.token = created_token
@@ -193,5 +261,59 @@ class UsersService(BaseService):
             content={
                 "message": constant.SUCCESS_DELETE_USER,
                 "data": jsonable_encoder(deleted_user),
+            },
+        )
+
+    @return_service
+    async def get_organizations(
+        self,
+        user: User,
+    ) -> OrganizationUserResponse:
+        organizations = await user.awaitable_attrs.organizations
+        data_organizations = []
+        for org in organizations:
+            org_data = await org.awaitable_attrs.organization
+            data_organizations.append(
+                UserOrganization(
+                    **OrganizationOutData.model_validate(org_data).model_dump(),
+                    role=org.role,
+                )
+            )
+        data = UserOrganizationOutData(
+            **UserOutData.model_validate(user).model_dump(),
+            organizations=data_organizations,
+        )
+        return dict(
+            status_code=HTTP_200_OK,
+            content={
+                "message": constant.SUCCESS_GET_USER_ORGANIZATION,
+                "data": jsonable_encoder(data),
+            },
+        )
+
+    @return_service
+    async def get_websites(
+        self,
+        user: User,
+    ) -> WebsiteUserResponse:
+        websites = await user.awaitable_attrs.websites
+        data_websites = []
+        for website in websites:
+            website_data = await website.awaitable_attrs.website
+            data_websites.append(
+                UserWebsite(
+                    **WebsiteOutData.model_validate(website_data).model_dump(),
+                    role=website.role,
+                )
+            )
+        data = UserWebsiteOutData(
+            **UserOutData.model_validate(user).model_dump(),
+            websites=data_websites,
+        )
+        return dict(
+            status_code=HTTP_200_OK,
+            content={
+                "message": constant.SUCCESS_GET_USER_WEBSITE,
+                "data": jsonable_encoder(data),
             },
         )

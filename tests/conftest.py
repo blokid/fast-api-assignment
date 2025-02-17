@@ -61,6 +61,31 @@ def random_user() -> dict[str, str]:
 
 
 @pytest_asyncio.fixture(scope="module")
+def random_invite() -> dict[str, str]:
+    return dict(
+        email="randomemail@test.com",
+        role="org_member",
+    )
+
+
+@pytest_asyncio.fixture(scope="module")
+def random_org() -> dict[str, str]:
+    return dict(
+        name="test org",
+        description="test org desc",
+    )
+
+
+@pytest_asyncio.fixture(scope="module")
+def created_random_org() -> dict[str, str]:
+    return dict(
+        id=None,
+        name="test org",
+        description="test org desc",
+    )
+
+
+@pytest_asyncio.fixture(scope="module")
 def filter_params() -> dict[str, Any]:
     return dict(skip=0, limit=100)
 

@@ -12,3 +12,17 @@ class TokenUser(BaseModel):
     id: int
     username: str
     email: str
+
+
+class TokenVerify(BaseModel):
+    email: str
+
+
+class TokenInvite(BaseModel):
+    organization_id: int
+    email: str
+
+
+class TokenInviteWebsite(BaseModel):
+    website_id: int
+    email: str
