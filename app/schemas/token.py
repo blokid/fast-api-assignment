@@ -21,3 +21,8 @@ class TokenVerify(BaseModel):
 class TokenInvite(BaseModel):
     organization_id: int
     email: str
+
+
+class TokenInviteWebsite(BaseModel):
+    website_id: int
+    email: str
