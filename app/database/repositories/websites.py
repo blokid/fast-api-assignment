@@ -93,8 +93,8 @@ class WebsitesRepository(BaseRepository):
         self, *, website: Website, email: str, role: str
     ) -> WebsiteInvite:
         invite = WebsiteInvite(email=email, role=role)
-        org_invites = await website.awaitable_attrs.invites
-        org_invites.append(invite)
+        website_invites = await website.awaitable_attrs.invites
+        website_invites.append(invite)
         self.connection.add(website)
         await self.connection.commit()
         await self.connection.refresh(website)

@@ -90,9 +90,9 @@ class WebsitesService(BaseService):
     @return_service
     async def get_websites(
         self,
-        orgs_repo: WebsitesRepository = Depends(get_repository(WebsitesRepository)),
+        websites_repo: WebsitesRepository = Depends(get_repository(WebsitesRepository)),
     ) -> WebsiteResponse:
-        websites = await orgs_repo.get_websites()
+        websites = await websites_repo.get_websites()
 
         if not websites:
             return response_4xx(
@@ -175,35 +175,40 @@ class WebsitesService(BaseService):
         background_tasks: BackgroundTasks,
         secret_key: str,
         invite_in: WebsiteInviteIn,
-        orgs_repo: WebsitesRepository = Depends(get_repository(WebsitesRepository)),
+        websites_repo: WebsitesRepository = Depends(get_repository(WebsitesRepository)),
     ) -> WebsiteResponse:
-        website = await orgs_repo.get_website_by_id(website_id=website_id)
-
+        website = await websites_repo.get_website_by_id(website_id=website_id)
         if not website:
             return response_4xx(
                 status_code=HTTP_404_NOT_FOUND,
-                context={"reason": constant.FAIL_NO_ORGANIZATION},
+                context={"reason": constant.FAIL_NO_WEBSITE},
             )
-        if not await user.is_admin_of(website.id):
+        organiation: Organization = await website.awaitable_attrs.organization
+        if not await user.is_admin_of(
+            organization_id=organiation.id
+        ) or not await user.is_admin_of_website(website_id=website_id):
             return response_4xx(
                 status_code=HTTP_403_FORBIDDEN,
                 context={"reason": constant.FAIL_NOT_ALLOWED},
             )
-
-        invite: WebsiteInvite = await orgs_repo.invite_to_website(
+        if await self.is_already_member(email=invite_in.email, website=website):
+            return response_4xx(
+                status_code=HTTP_400_BAD_REQUEST,
+                context={"reason": constant.FAIL_USER_ALREADY_MEMBER},
+            )
+        invite: WebsiteInvite = await websites_repo.invite_to_website(
             website=website,
             email=invite_in.email,
             role=invite_in.role,
         )
-        created_token = token.create_org_invitation_token(
+        created_token = token.create_website_invitation_token(
             invite=invite, secret_key=secret_key
         )
         background_tasks.add_task(
-            email.send_invitation_email,
+            email.send_website_invitation_email,
             invite=invite,
             token=created_token.token,
         )
-
         return dict(
             status_code=HTTP_200_OK,
             content={
@@ -211,6 +216,13 @@ class WebsitesService(BaseService):
                 "data": {},
             },
         )
+
+    async def is_already_member(self, email: str, website: Website) -> bool:
+        members = await website.awaitable_attrs.users
+        for member in members:
+            if member.user.email == email:
+                return True
+        return False
 
     @return_service
     async def accept_website_invite(

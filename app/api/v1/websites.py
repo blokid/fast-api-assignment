@@ -11,15 +11,13 @@ from app.database.repositories.users import UsersRepository
 from app.database.repositories.websites import WebsitesRepository
 from app.models.user import User
 from app.schemas.organization import (
-    OrganizationInCreate,
-    OrganizationInviteIn,
     OrganizationResponse,
 )
 from app.schemas.organization_user import OrganizationUserResponse
 from app.schemas.user import InvitationTokenData
 from app.schemas.website import (
     WebsiteInCreate,
-    WebsiteInUpdate,
+    WebsiteInviteIn,
     WebsiteResponse,
 )
 from app.services.organizations import OrganizationsService
@@ -38,14 +36,14 @@ router = APIRouter()
 )
 async def read_websites(
     *,
-    website_service: WebsitesService = Depends(get_service(WebsitesService)),
-    website_repo: WebsitesRepository = Depends(get_repository(WebsitesRepository)),
+    websites_service: WebsitesService = Depends(get_service(WebsitesService)),
+    websites_repo: WebsitesRepository = Depends(get_repository(WebsitesRepository)),
 ) -> ServiceResult:
     """
     Read all websites.
     """
-    result = await website_service.get_websites(
-        website_repo=website_repo,
+    result = await websites_service.get_websites(
+        websites_repo=websites_repo,
     )
 
     return await handle_result(result)
@@ -140,34 +138,36 @@ async def delete_organization(
 
 
 @router.post(
-    "/{organization_id}/invite",
+    "/{website_id}/invite",
     status_code=HTTP_200_OK,
-    response_model=OrganizationResponse,
+    response_model=WebsiteResponse,
     responses=ERROR_RESPONSES,
-    name="organization:invite",
+    name="website:invite",
 )
-async def invite_to_organization(
+async def invite_to_website(
     *,
     user: User = Depends(get_current_user_auth()),
-    organization_id: int,
+    website_id: int,
     background_tasks: BackgroundTasks,
     settings: AppSettings = Depends(get_app_settings),
     orgs_service: OrganizationsService = Depends(get_service(OrganizationsService)),
+    websites_service: WebsitesService = Depends(get_service(WebsitesService)),
     orgs_repo: OrganizationsRepository = Depends(
         get_repository(OrganizationsRepository)
     ),
-    invite_in: OrganizationInviteIn,
+    websites_repo: WebsitesRepository = Depends(get_repository(WebsitesRepository)),
+    invite_in: WebsiteInviteIn,
 ) -> ServiceResult:
     """
-    Invite user to organization.
+    Invite user to website.
     """
     secret_key = str(settings.secret_key.get_secret_value())
-    result = await orgs_service.invite_to_organization(
-        organization_id=organization_id,
+    result = await websites_service.invite_to_website(
+        website_id=website_id,
         background_tasks=background_tasks,
         secret_key=secret_key,
         invite_in=invite_in,
-        orgs_repo=orgs_repo,
+        websites_repo=websites_repo,
         user=user,
     )
 

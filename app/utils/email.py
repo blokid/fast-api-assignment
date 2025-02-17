@@ -3,7 +3,7 @@ import logging
 from fastapi_mail import FastMail, MessageSchema
 
 from app.core.config import AppSettings, get_app_settings
-from app.models import OrganizationInvite
+from app.models import OrganizationInvite, WebsiteInvite
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +19,7 @@ async def send_verification_email(email: str, token: str) -> None:
     )
     fm = FastMail(app_settings.mail_config)
     await fm.send_message(message)
+    logger.info(f"Verification mail sent to {email}!")
 
 
 async def send_invitation_email(
@@ -37,3 +38,21 @@ async def send_invitation_email(
     fm = FastMail(app_settings.mail_config)
     await fm.send_message(message)
     logger.info(f"Invitation mail sent to {invite.email}!")
+
+
+async def send_website_invitation_email(
+    invite: WebsiteInvite,
+    token: str,
+) -> None:
+    app_settings: AppSettings = get_app_settings()
+    invitation_link = f"{app_settings.frontend_url}/website-invite?token={token}"
+    website = await invite.awaitable_attrs.website
+    message = MessageSchema(
+        subject=f"You've been invited to join the website {website.name}",
+        recipients=[invite.email],
+        body=f"Please accept the invitation by clicking the link below:\n\n{invitation_link}",
+        subtype="plain",
+    )
+    fm = FastMail(app_settings.mail_config)
+    await fm.send_message(message)
+    logger.info(f"Website invitation mail sent to {invite.email}!")
