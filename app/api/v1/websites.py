@@ -83,27 +83,25 @@ async def create_website(
 
 
 @router.get(
-    "/{organization_id}",
+    "/{website_id}",
     status_code=HTTP_200_OK,
-    response_model=OrganizationResponse,
+    response_model=WebsiteResponse,
     responses=ERROR_RESPONSES,
-    name="organization:info",
+    name="website:info",
 )
-async def read_organization(
+async def read_website(
     *,
     user: User = Depends(get_current_user_auth()),
-    organization_id: int,
-    orgs_service: OrganizationsService = Depends(get_service(OrganizationsService)),
-    orgs_repo: OrganizationsRepository = Depends(
-        get_repository(OrganizationsRepository)
-    ),
+    website_id: int,
+    websites_service: WebsitesService = Depends(get_service(WebsitesService)),
+    websites_repo: WebsitesRepository = Depends(get_repository(WebsitesRepository)),
 ) -> ServiceResult:
     """
-    Read organization info.
+    Read website info.
     """
-    result = await orgs_service.get_organization(
-        organization_id=organization_id,
-        orgs_repo=orgs_repo,
+    result = await websites_service.get_website(
+        website_id=website_id,
+        websites_repo=websites_repo,
         user=user,
     )
 
