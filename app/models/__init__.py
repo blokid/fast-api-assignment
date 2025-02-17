@@ -1,9 +1,3 @@
-from .organization import (
-    Organization,
-    OrganizationInvite,
-    OrganizationUser,
-    Website,
-    WebsiteInvite,
-    WebsiteUser,
-)
+from .organization import Organization, OrganizationInvite, OrganizationUser
 from .user import User
+from .website import Website, WebsiteInvite, WebsiteUser
