@@ -1,5 +1,3 @@
-import uuid
-
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, text
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import relationship
