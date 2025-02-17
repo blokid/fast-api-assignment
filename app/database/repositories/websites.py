@@ -125,17 +125,17 @@ class WebsitesRepository(BaseRepository):
         return result.WebsiteInvite if result is not None else result
 
     @db_error_handler
-    async def accept_website_invite(self, *, org_invite: WebsiteInvite, user: User):
-        org_invite.is_accepted = True
-        self.connection.add(org_invite)
-        website: Website = await org_invite.awaitable_attrs.website
+    async def accept_website_invite(self, *, website_invite: WebsiteInvite, user: User):
+        website_invite.is_accepted = True
+        self.connection.add(website_invite)
+        website: Website = await website_invite.awaitable_attrs.website
         users = await website.awaitable_attrs.users
-        users.append(WebsiteUser(role=org_invite.role, user=user))
+        users.append(WebsiteUser(role=website_invite.role, user=user))
         self.connection.add(website)
         await self.connection.commit()
-        await self.connection.refresh(org_invite)
+        await self.connection.refresh(website_invite)
         await self.connection.refresh(website)
-        return org_invite
+        return website_invite
 
     @db_error_handler
     async def get_website_users(self, *, website_id: int):

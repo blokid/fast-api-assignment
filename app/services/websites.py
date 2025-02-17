@@ -228,29 +228,31 @@ class WebsitesService(BaseService):
     async def accept_website_invite(
         self,
         token_in: token.InvitationTokenData,
-        orgs_repo: WebsitesRepository = Depends(get_repository(WebsitesRepository)),
+        websites_repo: WebsitesRepository = Depends(get_repository(WebsitesRepository)),
         user_repo: UsersRepository = Depends(get_repository(UsersRepository)),
         secret_key: str = "",
     ) -> WebsiteResponse:
-        decoded_invite: token.TokenInvite = token.get_invite_from_token(
+        decoded_invite: token.TokenInvite = token.get_website_invite_from_token(
             token=token_in.token, secret_key=secret_key
         )
-        org_invite: WebsiteInvite = await orgs_repo.get_website_invite(
+        website_invite: WebsiteInvite = await websites_repo.get_website_invite(
             website_id=decoded_invite.website_id, email=decoded_invite.email
         )
-        if not org_invite:
+        if not website_invite:
             return response_4xx(
                 status_code=HTTP_404_NOT_FOUND,
-                context={"reason": constant.FAIL_NO_ORGANIZATION_INVITE},
+                context={"reason": constant.FAIL_NO_WEBSITE_INVITE},
             )
-        user = await user_repo.get_user_by_email(email=org_invite.email)
+        user = await user_repo.get_user_by_email(email=website_invite.email)
         if not user:
             return response_4xx(
                 status_code=HTTP_404_NOT_FOUND,
                 context={"reason": constant.FAIL_NEED_TO_SIGN_UP},
             )
-        await orgs_repo.accept_website_invite(org_invite=org_invite, user=user)
-        website = await org_invite.awaitable_attrs.website
+        await websites_repo.accept_website_invite(
+            website_invite=website_invite, user=user
+        )
+        website = await website_invite.awaitable_attrs.website
         return dict(
             status_code=HTTP_200_OK,
             content={

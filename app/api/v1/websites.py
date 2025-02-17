@@ -177,27 +177,25 @@ async def invite_to_website(
 @router.post(
     "/accept-invite",
     status_code=HTTP_200_OK,
-    response_model=OrganizationResponse,
+    response_model=WebsiteResponse,
     responses=ERROR_RESPONSES,
-    name="organization:accept-invite",
+    name="website:accept-invite",
 )
-async def accept_organization_invite(
+async def accept_website_invite(
     *,
     user_repo: UsersRepository = Depends(get_repository(UsersRepository)),
-    orgs_service: OrganizationsService = Depends(get_service(OrganizationsService)),
-    orgs_repo: OrganizationsRepository = Depends(
-        get_repository(OrganizationsRepository)
-    ),
+    websites_service: WebsitesService = Depends(get_service(WebsitesService)),
+    websites_repo: WebsitesRepository = Depends(get_repository(WebsitesRepository)),
     token: InvitationTokenData,
     settings: AppSettings = Depends(get_app_settings),
 ) -> ServiceResult:
     """
-    Accept organization invite.
+    Accept website invite.
     """
     secret_key = str(settings.secret_key.get_secret_value())
-    result = await orgs_service.accept_organization_invite(
+    result = await websites_service.accept_website_invite(
         token_in=token,
-        orgs_repo=orgs_repo,
+        websites_repo=websites_repo,
         user_repo=user_repo,
         secret_key=secret_key,
     )
