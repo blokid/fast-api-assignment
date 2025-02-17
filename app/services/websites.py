@@ -273,7 +273,7 @@ class WebsitesService(BaseService):
         websites_repo: WebsitesRepository = Depends(get_repository(WebsitesRepository)),
     ) -> WebsiteUserResponse:
         website: Website = await websites_repo.get_website_by_id(website_id=website_id)
-        if not website:
+        if not website or website.deleted_at is not None:
             return response_4xx(
                 status_code=HTTP_404_NOT_FOUND,
                 context={"reason": constant.FAIL_NO_WEBSITE},
