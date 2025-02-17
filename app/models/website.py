@@ -22,7 +22,7 @@ class Website(AsyncAttrs, RWModel, DateTimeModelMixin):
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=False)
 
     # relationships
-    users = relationship("WebsiteUser", back_populates="websites")
+    users = relationship("WebsiteUser", back_populates="website")
     invites = relationship("WebsiteInvite", back_populates="website")
     organization = relationship("Organization", back_populates="websites")
 

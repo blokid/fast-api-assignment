@@ -29,6 +29,7 @@ FAIL_NO_ORGANIZATION = "No organization found."
 FAIL_NO_ORGANIZATION_INVITE = "No organization invite found."
 FAIL_NEED_TO_SIGN_UP = "Please sign up first to accept the invitation."
 FAIL_VALIDATION_ORGANIZATION_DUPLICATED = "There is a duplicate organization already."
+FAIL_VALIDATION_WEBSITE_DUPLICATED = "There is a duplicate website already."
 FAIL_NOT_ALLOWED = "You are not allowed for this operation."
 
 FAIL_AUTH_CHECK = "Authentication required."
