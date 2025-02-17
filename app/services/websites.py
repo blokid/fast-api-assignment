@@ -97,13 +97,13 @@ class WebsitesService(BaseService):
         if not websites:
             return response_4xx(
                 status_code=HTTP_404_NOT_FOUND,
-                context={"reason": constant.FAIL_NO_ORGANIZATION},
+                context={"reason": constant.FAIL_NO_WEBSITE},
             )
 
         return dict(
             status_code=HTTP_200_OK,
             content={
-                "message": constant.SUCCESS_GET_ORGANIZATION,
+                "message": constant.SUCCESS_GET_WEBSITE,
                 "data": jsonable_encoder(
                     [WebsiteOutData.model_validate(org) for org in websites]
                 ),
@@ -266,27 +266,31 @@ class WebsitesService(BaseService):
         self,
         user: User,
         website_id: int,
-        orgs_repo: WebsitesRepository = Depends(get_repository(WebsitesRepository)),
+        websites_repo: WebsitesRepository = Depends(get_repository(WebsitesRepository)),
     ) -> WebsiteUserResponse:
-        website: Website = await orgs_repo.get_website_by_id(website_id=website_id)
+        website: Website = await websites_repo.get_website_by_id(website_id=website_id)
         if not website:
             return response_4xx(
                 status_code=HTTP_404_NOT_FOUND,
-                context={"reason": constant.FAIL_NO_ORGANIZATION},
+                context={"reason": constant.FAIL_NO_WEBSITE},
             )
-        if not await user.is_member_of(website.id):
+        organization: Organization = await website.awaitable_attrs.organization
+        if not (
+            await user.is_member_of_website(website.id)
+            or await user.is_member_of(organization_id=organization.id)
+        ):
             return response_4xx(
                 status_code=HTTP_403_FORBIDDEN,
                 context={"reason": constant.FAIL_NOT_ALLOWED},
             )
-        org_users = await orgs_repo.get_website_users(website_id=website_id)
+        website_users = await websites_repo.get_website_users(website_id=website_id)
         data_users = []
-        for org_user in org_users:
-            user_data = await org_user.awaitable_attrs.user
+        for website_user in website_users:
+            user_data = await website_user.awaitable_attrs.user
             data_users.append(
                 WebsiteUser(
                     **UserOutData.model_validate(user_data).model_dump(),
-                    role=org_user.role,
+                    role=website_user.role,
                 )
             )
         data = WebsiteUserOutData(
@@ -296,7 +300,7 @@ class WebsitesService(BaseService):
         return dict(
             status_code=HTTP_200_OK,
             content={
-                "message": constant.SUCCESS_GET_ORGANIZATION,
+                "message": constant.SUCCESS_GET_WEBSITE,
                 "data": jsonable_encoder(data),
             },
         )

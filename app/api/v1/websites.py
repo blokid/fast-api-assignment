@@ -20,6 +20,7 @@ from app.schemas.website import (
     WebsiteInviteIn,
     WebsiteResponse,
 )
+from app.schemas.website_user import WebsiteUserResponse
 from app.services.organizations import OrganizationsService
 from app.services.websites import WebsitesService
 from app.utils import ERROR_RESPONSES, ServiceResult, handle_result
@@ -203,27 +204,25 @@ async def accept_website_invite(
 
 
 @router.get(
-    "/{organization_id}/users",
+    "/{website_id}/users",
     status_code=HTTP_200_OK,
-    response_model=OrganizationUserResponse,
+    response_model=WebsiteUserResponse,
     responses=ERROR_RESPONSES,
-    name="organization:users",
+    name="website:users",
 )
-async def get_organization_users(
+async def get_website_users(
     *,
     user: User = Depends(get_current_user_auth()),
-    organization_id: int,
-    orgs_service: OrganizationsService = Depends(get_service(OrganizationsService)),
-    orgs_repo: OrganizationsRepository = Depends(
-        get_repository(OrganizationsRepository)
-    ),
+    website_id: int,
+    websites_service: WebsitesService = Depends(get_service(WebsitesService)),
+    websites_repo: WebsitesRepository = Depends(get_repository(WebsitesRepository)),
 ) -> ServiceResult:
     """
-    Get organization users.
+    Get website users.
     """
-    result = await orgs_service.get_organization_users(
-        organization_id=organization_id,
-        orgs_repo=orgs_repo,
+    result = await websites_service.get_website_users(
+        website_id=website_id,
+        websites_repo=websites_repo,
         user=user,
     )
     return await handle_result(result)
