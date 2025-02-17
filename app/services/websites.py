@@ -143,27 +143,31 @@ class WebsitesService(BaseService):
         self,
         user: User,
         website_id: int,
-        orgs_repo: WebsitesRepository = Depends(get_repository(WebsitesRepository)),
+        websites_repo: WebsitesRepository = Depends(get_repository(WebsitesRepository)),
     ) -> WebsiteResponse:
-        website = await orgs_repo.get_website_by_id(website_id=website_id)
+        website = await websites_repo.get_website_by_id(website_id=website_id)
 
         if not website:
             return response_4xx(
                 status_code=HTTP_404_NOT_FOUND,
-                context={"reason": constant.FAIL_NO_ORGANIZATION},
+                context={"reason": constant.FAIL_NO_WEBSITE},
             )
-        if not await user.is_admin_of(website.id):
+        organization: Organization = await website.awaitable_attrs.organization
+        if not (
+            await user.is_admin_of_website(website.id)
+            or await user.is_admin_of(organization_id=organization.id)
+        ):
             return response_4xx(
                 status_code=HTTP_403_FORBIDDEN,
                 context={"reason": constant.FAIL_NOT_ALLOWED},
             )
 
-        await orgs_repo.delete_website(website_id=website_id)
+        await websites_repo.delete_website(website=website)
 
         return dict(
             status_code=HTTP_200_OK,
             content={
-                "message": constant.SUCCESS_DELETE_ORGANIZATION,
+                "message": constant.SUCCESS_DELETE_WEBSITE,
             },
         )
 

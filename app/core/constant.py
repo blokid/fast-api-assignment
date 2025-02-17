@@ -14,6 +14,8 @@ SUCCESS_MATCHED_USER_TOKEN = "The user who matched with token."
 SUCCESS_MATCHED_USER_EMAIL = "The user who matched with email."
 SUCCESS_UPDATE_USER = "Updated user data successfully."
 SUCCESS_DELETE_USER = "Deleted user successfully."
+SUCCESS_DELETE_ORGANIZATION = "Deleted organization successfully."
+SUCCESS_DELETE_WEBSITE = "Deleted website successfully."
 SUCCESS_VERIFY_USER = "Verified user successfully."
 SUCCESS_INVITATION_ACCEPT = "Invitation accepted successfully."
 
