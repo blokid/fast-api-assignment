@@ -22,7 +22,8 @@ class User(AsyncAttrs, RWModel, DateTimeModelMixin):
     hashed_password = Column(String(256), nullable=True)
 
     # relationships
-    organizations = relationship("OrganizationUser", back_populates="user")
+    organizations = relationship("OrganizationUser", back_populates="users")
+    websites = relationship("WebsiteUser", back_populates="users")
 
     def check_password(self, password: str) -> bool:
         return security.verify_password(self.salt + password, self.hashed_password)

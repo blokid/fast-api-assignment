@@ -22,6 +22,7 @@ class Organization(AsyncAttrs, RWModel, DateTimeModelMixin):
     # relationships
     users = relationship("OrganizationUser", back_populates="organization")
     invites = relationship("OrganizationInvite", back_populates="organization")
+    websites = relationship("Website", back_populates="organization")
 
     @staticmethod
     def generate_random_name() -> str:
