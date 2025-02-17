@@ -167,12 +167,13 @@ class WebsitesService(BaseService):
                 context={"reason": constant.FAIL_NOT_ALLOWED},
             )
 
-        await websites_repo.delete_website(website=website)
+        website = await websites_repo.delete_website(website=website)
 
         return dict(
             status_code=HTTP_200_OK,
             content={
                 "message": constant.SUCCESS_DELETE_WEBSITE,
+                "data": jsonable_encoder(website),
             },
         )
 

@@ -152,12 +152,13 @@ class OrganizationsService(BaseService):
                 context={"reason": constant.FAIL_NOT_ALLOWED},
             )
 
-        await orgs_repo.delete_organization(organization_id=organization_id)
+        organization = await orgs_repo.delete_organization(organization=organization)
 
         return dict(
             status_code=HTTP_200_OK,
             content={
                 "message": constant.SUCCESS_DELETE_ORGANIZATION,
+                "data": jsonable_encoder(organization),
             },
         )
 
