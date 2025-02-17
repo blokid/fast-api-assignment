@@ -17,6 +17,7 @@ from app.schemas.organization_user import OrganizationUserResponse
 from app.schemas.user import InvitationTokenData
 from app.schemas.website import (
     WebsiteInCreate,
+    WebsiteInUpdate,
     WebsiteInviteIn,
     WebsiteResponse,
 )
@@ -221,4 +222,32 @@ async def get_website_users(
         websites_repo=websites_repo,
         user=user,
     )
+    return await handle_result(result)
+
+
+@router.patch(
+    "/{website_id}",
+    status_code=HTTP_200_OK,
+    response_model=WebsiteResponse,
+    responses=ERROR_RESPONSES,
+    name="website:update",
+)
+async def update_website(
+    *,
+    user: User = Depends(get_current_user_auth()),
+    website_id: int,
+    websites_service: WebsitesService = Depends(get_service(WebsitesService)),
+    websites_repo: WebsitesRepository = Depends(get_repository(WebsitesRepository)),
+    website_in: WebsiteInUpdate,
+) -> ServiceResult:
+    """
+    Update website.
+    """
+    result = await websites_service.update_website(
+        website_id=website_id,
+        websites_repo=websites_repo,
+        user=user,
+        website_in=website_in,
+    )
+
     return await handle_result(result)

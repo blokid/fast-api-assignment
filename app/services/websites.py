@@ -20,6 +20,7 @@ from app.models.organization import Organization
 from app.schemas.user import UserOutData
 from app.schemas.website import (
     WebsiteInCreate,
+    WebsiteInUpdate,
     WebsiteInviteIn,
     WebsiteOutData,
     WebsiteResponse,
@@ -310,5 +311,39 @@ class WebsitesService(BaseService):
             content={
                 "message": constant.SUCCESS_GET_WEBSITE,
                 "data": jsonable_encoder(data),
+            },
+        )
+
+    @return_service
+    async def update_website(
+        self,
+        website_id: int,
+        user: User,
+        website_in: WebsiteInUpdate,
+        websites_repo: WebsitesRepository = Depends(get_repository(WebsitesRepository)),
+    ) -> Website:
+        website = await websites_repo.get_website_by_id(website_id=website_id)
+        if not website or website.deleted_at is not None:
+            return response_4xx(
+                status_code=HTTP_404_NOT_FOUND,
+                context={"reason": constant.FAIL_NO_WEBSITE},
+            )
+        organization: Organization = await website.awaitable_attrs.organization
+        if not (
+            await user.is_admin_of_website(website.id)
+            or await user.is_admin_of(organization_id=organization.id)
+        ):
+            return response_4xx(
+                status_code=HTTP_403_FORBIDDEN,
+                context={"reason": constant.FAIL_NOT_ALLOWED},
+            )
+        website = await websites_repo.update_website(
+            website=website, website_in=website_in
+        )
+        return dict(
+            status_code=HTTP_200_OK,
+            content={
+                "message": constant.SUCCESS_UPDATE_WEBSITE,
+                "data": jsonable_encoder(WebsiteOutData.model_validate(website)),
             },
         )
