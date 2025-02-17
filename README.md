@@ -23,7 +23,8 @@ make run
 #### Using docker-compose
 
 ```bash
-docker-compose -f ./docker/docker-compose.yml up
+docker compose --env-file=.db.env up postgresql -d
+docker compose up -d app
 ```
 
 For development, recommend using one local database between multiple projects.
@@ -40,6 +41,10 @@ docker volume create pgdata
 ```bash
 docker volume create redisdata
 ```
+
+### Tests
+
+- Clean db tables before running tests
 
 ### Database
 
