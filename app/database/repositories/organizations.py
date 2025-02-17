@@ -118,9 +118,16 @@ class OrganizationsRepository(BaseRepository):
         return result.OrganizationInvite if result is not None else result
 
     @db_error_handler
-    async def accept_organization_invite(self, *, org_invite: OrganizationInvite):
+    async def accept_organization_invite(
+        self, *, org_invite: OrganizationInvite, user: User
+    ):
         org_invite.is_accepted = True
         self.connection.add(org_invite)
+        organization: Organization = await org_invite.awaitable_attrs.organization
+        users = await organization.awaitable_attrs.users
+        users.append(OrganizationUser(role=org_invite.role, user=user))
+        self.connection.add(organization)
         await self.connection.commit()
         await self.connection.refresh(org_invite)
+        await self.connection.refresh(organization)
         return org_invite

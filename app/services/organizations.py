@@ -14,7 +14,7 @@ from app.api.dependencies.database import get_repository
 from app.core import constant, token
 from app.database.repositories.organizations import OrganizationsRepository
 from app.database.repositories.users import UsersRepository
-from app.models import OrganizationInvite, User
+from app.models import OrganizationInvite, OrganizationUser, User
 from app.schemas.organization import (
     OrganizationInCreate,
     OrganizationInviteIn,
@@ -230,7 +230,7 @@ class OrganizationsService(BaseService):
                 status_code=HTTP_404_NOT_FOUND,
                 context={"reason": constant.FAIL_NEED_TO_SIGN_UP},
             )
-        await orgs_repo.accept_organization_invite(org_invite=org_invite)
+        await orgs_repo.accept_organization_invite(org_invite=org_invite, user=user)
         organization = await org_invite.awaitable_attrs.organization
         return dict(
             status_code=HTTP_200_OK,
