@@ -13,6 +13,7 @@ from starlette.status import (
 from app.api.dependencies.database import get_repository
 from app.core import constant, token
 from app.database.repositories.organizations import OrganizationsRepository
+from app.database.repositories.users import UsersRepository
 from app.models import OrganizationInvite, User
 from app.schemas.organization import (
     OrganizationInCreate,
@@ -199,5 +200,44 @@ class OrganizationsService(BaseService):
             content={
                 "message": constant.SUCCESS_INVITATION_EMAIL,
                 "data": {},
+            },
+        )
+
+    @return_service
+    async def accept_organization_invite(
+        self,
+        token_in: token.InvitationTokenData,
+        orgs_repo: OrganizationsRepository = Depends(
+            get_repository(OrganizationsRepository)
+        ),
+        user_repo: UsersRepository = Depends(get_repository(UsersRepository)),
+        secret_key: str = "",
+    ) -> OrganizationResponse:
+        decoded_invite: token.TokenInvite = token.get_invite_from_token(
+            token=token_in.token, secret_key=secret_key
+        )
+        org_invite: OrganizationInvite = await orgs_repo.get_organization_invite(
+            organization_id=decoded_invite.organization_id, email=decoded_invite.email
+        )
+        if not org_invite:
+            return response_4xx(
+                status_code=HTTP_404_NOT_FOUND,
+                context={"reason": constant.FAIL_NO_ORGANIZATION_INVITE},
+            )
+        user = await user_repo.get_user_by_email(email=org_invite.email)
+        if not user:
+            return response_4xx(
+                status_code=HTTP_404_NOT_FOUND,
+                context={"reason": constant.FAIL_NEED_TO_SIGN_UP},
+            )
+        await orgs_repo.accept_organization_invite(org_invite=org_invite)
+        organization = await org_invite.awaitable_attrs.organization
+        return dict(
+            status_code=HTTP_200_OK,
+            content={
+                "message": constant.SUCCESS_INVITATION_ACCEPT,
+                "data": jsonable_encoder(
+                    OrganizationOutData.model_validate(organization)
+                ),
             },
         )

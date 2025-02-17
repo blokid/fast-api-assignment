@@ -7,14 +7,16 @@ from app.api.dependencies.service import get_service
 from app.core.config import get_app_settings
 from app.core.settings.app import AppSettings
 from app.database.repositories.organizations import OrganizationsRepository
+from app.database.repositories.users import UsersRepository
 from app.models.user import User
 from app.schemas.organization import (
     OrganizationInCreate,
     OrganizationInviteIn,
     OrganizationResponse,
 )
+from app.schemas.user import InvitationTokenData
 from app.services.organizations import OrganizationsService
-from app.utils import ERROR_RESPONSES, handle_result
+from app.utils import ERROR_RESPONSES, ServiceResult, handle_result
 
 router = APIRouter()
 
@@ -32,7 +34,10 @@ async def read_organizations(
     orgs_repo: OrganizationsRepository = Depends(
         get_repository(OrganizationsRepository)
     ),
-):
+) -> ServiceResult:
+    """
+    Read all organizations.
+    """
     result = await orgs_service.get_organizations(
         orgs_repo=orgs_repo,
     )
@@ -55,7 +60,10 @@ async def create_organization(
         get_repository(OrganizationsRepository)
     ),
     org_in: OrganizationInCreate,
-) -> OrganizationResponse:
+) -> ServiceResult:
+    """
+    Create new organization.
+    """
     result = await orgs_service.create_organization(
         org_in=org_in,
         orgs_repo=orgs_repo,
@@ -80,7 +88,10 @@ async def read_organization(
     orgs_repo: OrganizationsRepository = Depends(
         get_repository(OrganizationsRepository)
     ),
-):
+) -> ServiceResult:
+    """
+    Read organization info.
+    """
     result = await orgs_service.get_organization(
         organization_id=organization_id,
         orgs_repo=orgs_repo,
@@ -105,7 +116,10 @@ async def delete_organization(
     orgs_repo: OrganizationsRepository = Depends(
         get_repository(OrganizationsRepository)
     ),
-):
+) -> ServiceResult:
+    """
+    Delete organization.
+    """
     result = await orgs_service.delete_organization(
         organization_id=organization_id,
         orgs_repo=orgs_repo,
@@ -133,7 +147,10 @@ async def invite_to_organization(
         get_repository(OrganizationsRepository)
     ),
     invite_in: OrganizationInviteIn,
-):
+) -> ServiceResult:
+    """
+    Invite user to organization.
+    """
     secret_key = str(settings.secret_key.get_secret_value())
     result = await orgs_service.invite_to_organization(
         organization_id=organization_id,
@@ -144,4 +161,34 @@ async def invite_to_organization(
         user=user,
     )
 
+    return await handle_result(result)
+
+
+@router.post(
+    "/accept-invite",
+    status_code=HTTP_200_OK,
+    response_model=OrganizationResponse,
+    responses=ERROR_RESPONSES,
+    name="organization:accept-invite",
+)
+async def accept_organization_invite(
+    *,
+    user_repo: UsersRepository = Depends(get_repository(UsersRepository)),
+    orgs_service: OrganizationsService = Depends(get_service(OrganizationsService)),
+    orgs_repo: OrganizationsRepository = Depends(
+        get_repository(OrganizationsRepository)
+    ),
+    token: InvitationTokenData,
+    settings: AppSettings = Depends(get_app_settings),
+) -> ServiceResult:
+    """
+    Accept organization invite.
+    """
+    secret_key = str(settings.secret_key.get_secret_value())
+    result = await orgs_service.accept_organization_invite(
+        token_in=token,
+        orgs_repo=orgs_repo,
+        user_repo=user_repo,
+        secret_key=secret_key,
+    )
     return await handle_result(result)

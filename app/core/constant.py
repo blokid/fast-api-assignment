@@ -14,6 +14,7 @@ SUCCESS_MATCHED_USER_EMAIL = "The user who matched with email."
 SUCCESS_UPDATE_USER = "Updated user data successfully."
 SUCCESS_DELETE_USER = "Deleted user successfully."
 SUCCESS_VERIFY_USER = "Verified user successfully."
+SUCCESS_INVITATION_ACCEPT = "Invitation accepted successfully."
 
 # FAIL
 FAIL_VALIDATION_USER_DUPLICATED = "There is a duplicate user already."
@@ -25,6 +26,8 @@ FAIL_VALIDATION_MATCHED_USER_EMAIL = "No user matched with email."
 FAIL_VALIDATION_MATCHED_USER_ID = "No user matched with ID."
 FAIL_VALIDATION_MATCHED_FILTERED_USERS = "There are no user lists matched filter."
 FAIL_NO_ORGANIZATION = "No organization found."
+FAIL_NO_ORGANIZATION_INVITE = "No organization invite found."
+FAIL_NEED_TO_SIGN_UP = "Please sign up first to accept the invitation."
 FAIL_VALIDATION_ORGANIZATION_DUPLICATED = "There is a duplicate organization already."
 FAIL_NOT_ALLOWED = "You are not allowed for this operation."
 
