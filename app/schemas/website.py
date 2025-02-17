@@ -1,8 +1,9 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
+from app.core import constant
 from app.schemas.message import ApiResponse
 
 
@@ -49,3 +50,10 @@ class WebsiteResponse(ApiResponse):
 class WebsiteInviteIn(BaseModel):
     email: str
     role: str
+
+    @field_validator("role")
+    def validate_role(cls, v: str) -> str:
+        roles = [constant.WEBSITE_ADMIN, constant.WEBSITE_MEMBER]
+        if v not in roles:
+            raise ValueError(f"role must be one of {', '.join(map(repr, roles))}")
+        return v
