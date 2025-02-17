@@ -17,7 +17,8 @@ class WebsitesRepository(BaseRepository):
     ) -> Website:
         website = Website(**website_in.model_dump())
         website.users.append(WebsiteUser(role=constant.WEBSITE_ADMIN, user=user))
-        organization.websites.append(website)
+        org_websites = await organization.awaitable_attrs.websites
+        org_websites.append(website)
         self.connection.add(website)
         await self.connection.commit()
         await self.connection.refresh(website)
@@ -46,6 +47,17 @@ class WebsitesRepository(BaseRepository):
         raw_result = await self.connection.execute(query)
         result = raw_result.fetchone()
 
+        return result.Website if result is not None else result
+
+    @db_error_handler
+    async def get_duplicate_website(self, *, website_in: WebsiteInCreate) -> Website:
+        query = (
+            select(Website)
+            .where(or_(Website.name == website_in.name, Website.url == website_in.url))
+            .limit(1)
+        )
+        raw_result = await self.connection.execute(query)
+        result = raw_result.fetchone()
         return result.Website if result is not None else result
 
     @db_error_handler

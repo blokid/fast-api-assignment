@@ -8,6 +8,7 @@ from app.core.config import get_app_settings
 from app.core.settings.app import AppSettings
 from app.database.repositories.organizations import OrganizationsRepository
 from app.database.repositories.users import UsersRepository
+from app.database.repositories.websites import WebsitesRepository
 from app.models.user import User
 from app.schemas.organization import (
     OrganizationInCreate,
@@ -16,7 +17,13 @@ from app.schemas.organization import (
 )
 from app.schemas.organization_user import OrganizationUserResponse
 from app.schemas.user import InvitationTokenData
+from app.schemas.website import (
+    WebsiteInCreate,
+    WebsiteInUpdate,
+    WebsiteResponse,
+)
 from app.services.organizations import OrganizationsService
+from app.services.websites import WebsitesService
 from app.utils import ERROR_RESPONSES, ServiceResult, handle_result
 
 router = APIRouter()
@@ -25,22 +32,20 @@ router = APIRouter()
 @router.get(
     "",
     status_code=HTTP_200_OK,
-    response_model=OrganizationResponse,
+    response_model=WebsiteResponse,
     responses=ERROR_RESPONSES,
-    name="organizations:all",
+    name="websites:all",
 )
-async def read_organizations(
+async def read_websites(
     *,
-    orgs_service: OrganizationsService = Depends(get_service(OrganizationsService)),
-    orgs_repo: OrganizationsRepository = Depends(
-        get_repository(OrganizationsRepository)
-    ),
+    website_service: WebsitesService = Depends(get_service(WebsitesService)),
+    website_repo: WebsitesRepository = Depends(get_repository(WebsitesRepository)),
 ) -> ServiceResult:
     """
-    Read all organizations.
+    Read all websites.
     """
-    result = await orgs_service.get_organizations(
-        orgs_repo=orgs_repo,
+    result = await website_service.get_websites(
+        website_repo=website_repo,
     )
 
     return await handle_result(result)
@@ -49,26 +54,30 @@ async def read_organizations(
 @router.post(
     "",
     status_code=HTTP_201_CREATED,
-    response_model=OrganizationResponse,
+    response_model=WebsiteResponse,
     responses=ERROR_RESPONSES,
-    name="organization:create",
+    name="website:create",
 )
-async def create_organization(
+async def create_website(
     *,
+    organization_id: int,
     user: User = Depends(get_current_user_auth()),
-    orgs_service: OrganizationsService = Depends(get_service(OrganizationsService)),
+    websites_service: WebsitesService = Depends(get_service(WebsitesService)),
+    websites_repo: WebsitesRepository = Depends(get_repository(WebsitesRepository)),
     orgs_repo: OrganizationsRepository = Depends(
         get_repository(OrganizationsRepository)
     ),
-    org_in: OrganizationInCreate,
+    website_in: WebsiteInCreate,
 ) -> ServiceResult:
     """
-    Create new organization.
+    Create new website.
     """
-    result = await orgs_service.create_organization(
-        org_in=org_in,
+    result = await websites_service.create_website(
+        website_in=website_in,
+        websites_repo=websites_repo,
         orgs_repo=orgs_repo,
         user=user,
+        organization_id=organization_id,
     )
 
     return await handle_result(result)
