@@ -15,7 +15,12 @@ from app.core import constant, token
 from app.database.repositories.organizations import OrganizationsRepository
 from app.database.repositories.users import UsersRepository
 from app.models import Organization, User
-from app.schemas.organization import OrganizationInCreate
+from app.schemas.organization import OrganizationInCreate, OrganizationOutData
+from app.schemas.organization_user import (
+    OrganizationUserResponse,
+    UserOrganization,
+    UserOrganizationOutData,
+)
 from app.schemas.user import (
     UserAuthOutData,
     UserInCreate,
@@ -25,6 +30,12 @@ from app.schemas.user import (
     UserResponse,
     UsersFilters,
     VerificationTokenData,
+)
+from app.schemas.website import WebsiteOutData
+from app.schemas.website_user import (
+    UserWebsite,
+    UserWebsiteOutData,
+    WebsiteUserResponse,
 )
 from app.services.base import BaseService
 from app.utils import (
@@ -250,5 +261,59 @@ class UsersService(BaseService):
             content={
                 "message": constant.SUCCESS_DELETE_USER,
                 "data": jsonable_encoder(deleted_user),
+            },
+        )
+
+    @return_service
+    async def get_organizations(
+        self,
+        user: User,
+    ) -> OrganizationUserResponse:
+        organizations = await user.awaitable_attrs.organizations
+        data_organizations = []
+        for org in organizations:
+            org_data = await org.awaitable_attrs.organization
+            data_organizations.append(
+                UserOrganization(
+                    **OrganizationOutData.model_validate(org_data).model_dump(),
+                    role=org.role,
+                )
+            )
+        data = UserOrganizationOutData(
+            **UserOutData.model_validate(user).model_dump(),
+            organizations=data_organizations,
+        )
+        return dict(
+            status_code=HTTP_200_OK,
+            content={
+                "message": constant.SUCCESS_GET_USER_ORGANIZATION,
+                "data": jsonable_encoder(data),
+            },
+        )
+
+    @return_service
+    async def get_websites(
+        self,
+        user: User,
+    ) -> WebsiteUserResponse:
+        websites = await user.awaitable_attrs.websites
+        data_websites = []
+        for website in websites:
+            website_data = await website.awaitable_attrs.website
+            data_websites.append(
+                UserWebsite(
+                    **WebsiteOutData.model_validate(website_data).model_dump(),
+                    role=website.role,
+                )
+            )
+        data = UserWebsiteOutData(
+            **UserOutData.model_validate(user).model_dump(),
+            websites=data_websites,
+        )
+        return dict(
+            status_code=HTTP_200_OK,
+            content={
+                "message": constant.SUCCESS_GET_USER_WEBSITE,
+                "data": jsonable_encoder(data),
             },
         )
