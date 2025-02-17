@@ -115,3 +115,14 @@ def get_invite_from_token(token: str, secret_key: str) -> TokenInvite:
         raise ValueError("unable to decode") from decode_error
     except ValidationError as validation_error:
         raise ValueError("invalid token") from validation_error
+
+
+def get_website_invite_from_token(token: str, secret_key: str) -> TokenInviteWebsite:
+    try:
+        decoded_invite = jwt.decode(token, secret_key, algorithms=ALGORITHM)
+        return TokenInviteWebsite(**decoded_invite)
+
+    except JWTError as decode_error:
+        raise ValueError("unable to decode") from decode_error
+    except ValidationError as validation_error:
+        raise ValueError("invalid token") from validation_error

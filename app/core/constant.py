@@ -28,6 +28,7 @@ FAIL_VALIDATION_MATCHED_FILTERED_USERS = "There are no user lists matched filter
 FAIL_NO_ORGANIZATION = "No organization found."
 FAIL_NO_WEBSITE = "No website found."
 FAIL_NO_ORGANIZATION_INVITE = "No organization invite found."
+FAIL_NO_WEBSITE_INVITE = "No website invite found."
 FAIL_NEED_TO_SIGN_UP = "Please sign up first to accept the invitation."
 FAIL_USER_ALREADY_MEMBER = "The user is already a member."
 FAIL_VALIDATION_ORGANIZATION_DUPLICATED = "There is a duplicate organization already."
