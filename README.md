@@ -1,135 +1,137 @@
-# BlokID-Backend Assignment
+# Fast API Assignment
 
-## Pre-requisites
+A FastAPI application with email verification functionality.
 
-- Python 3.11.3
-- Linter: **Ruff**
-- Formatter: **Black**
+## Prerequisites
 
-## Usage
+Before you begin, ensure you have the following installed:
+- Python 3.11.3 or higher
+- Docker
+- Docker Compose
 
-### Print help
+**Note:** If you have a local database used by other projects, ensure port 5432 (PostgreSQL) is not in use to avoid conflicts.
 
+## Database Schema
+
+This database schema was created based on the project implementation to represent the data models and relationships:
+[Database Diagram](https://dbdiagram.io/d/67b4b0a5263d6cf9a099729f)
+
+## Quick Start
+
+1. Clone the repository:
 ```bash
-make
+git clone https://github.com/MinHtet-O/fast-api-assignment.git
+cd fast-api-assignment
 ```
 
-### Run the application
+2. Set up environment variables:
+Create a `.env` file in the root directory with the following variables:
+```env
+EMAIL_API_KEY=re_TpMbBgu9_Hnhz4wya8YrsAiW5zgUjWd9U
+email_verification_base_url=http://localhost:8000/api/v1
+smtp_host=
+smtp_port=
+smtp_username=
+smtp_password=
+APP_ENV=test  # Important: Set to 'test' to use Docker PostgreSQL. 'dev' will use localhost PostgreSQL
+```
 
+**Important Notes:** 
+- Make sure to set `APP_ENV=test` in your `.env` file. If set to `dev`, the application will attempt to connect to PostgreSQL running on localhost instead of the Docker container.
+- For email testing, you can use [Mailtrap](https://mailtrap.io/) to set up a test inbox. Use the provided SMTP credentials in your `.env` file.
+
+3. Start the application:
 ```bash
-make run
+docker-compose up -d
 ```
 
-#### Using docker-compose
-
+4. Run database migrations:
 ```bash
-docker-compose -f ./docker/docker-compose.yml up
+docker-compose exec app poetry run alembic upgrade head
 ```
 
-For development, recommend using one local database between multiple projects.
-Before running the application, make sure the volumes are created.
-
-- Volume for Postgres
-
+5. Run unit tests:
 ```bash
-docker volume create pgdata
+docker-compose exec app poetry run pytest
 ```
 
-- Volume for Redis
+## API Documentation
 
-```bash
-docker volume create redisdata
+Once the application is running, visit [http://localhost:8000/docs](http://localhost:8000/docs) to access the Swagger UI documentation for the API endpoints.
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `EMAIL_API_KEY` | API key for email service |
+| `email_verification_base_url` | Base URL for email verification endpoints |
+| `smtp_host` | SMTP server host |
+| `smtp_port` | SMTP server port |
+| `smtp_username` | SMTP username |
+| `smtp_password` | SMTP password |
+| `APP_ENV` | Application environment (test/dev). Use 'test' for Docker PostgreSQL |
+
+## Development Workflow
+
+### Commit Messages
+This repository follows [Semantic Commit Messages](https://gist.github.com/joshbuchea/6f47e86d2510bce28f8e7f42ae84c716) to maintain clear and standardized commit history. Examples:
+```
+feat: add email verification endpoint
+fix: correct database connection string
+chore: update dependencies
+test: add unit tests for user service
+docs: update API documentation
 ```
 
-### Database
+### Branch and PR Strategy
+- Main features are developed in separate branches and merged through Pull Requests
+- Each PR must follow the repository's PR template
+- Feature branches are merged using squash and merge strategy
+- Small commits (chores, fixes, tests) can be pushed directly to the main branch for convenience
 
-- Generate new migration file
+## Development
 
-```bash
-make generate-migration
-```
+Make sure all ports required by the application (such as PostgreSQL 5432) are not in conflict with your local services before starting the development environment.
 
-- Checkout the migration history
+## Troubleshooting
 
-```bash
-alembic history
-```
+If you encounter port conflicts:
+1. Stop any local PostgreSQL service
+2. Modify the port mapping in `docker-compose.yml` if needed
+3. Ensure no other services are using the required ports
+4. Verify that `APP_ENV` is set to `test` in your `.env` file
 
-- Upgrade to the latest revision
+## Technology Stack
 
-```bash
-make upgrade
-```
+### Core Framework and Tools
+- **FastAPI**: Modern, fast web framework for building APIs with Python
+- **Uvicorn**: Lightning-fast ASGI server implementation
+- **Docker & Docker Compose**: Containerization and service orchestration
 
-- Downgrade to a specific revision
+### Database and ORM
+- **PostgreSQL**: Primary database
+- **SQLAlchemy**: Python SQL toolkit and ORM
+- **Alembic**: Database migration tool
 
-```bash
-alembic downgrade <revision>
-```
 
-Or downgrade to the previous revision
+### Data Validation and Settings
+- **Pydantic**: Data validation using Python type annotations
+- **pydantic-settings**: Settings management using Pydantic
+- **email-validator**: Email validation library
 
-```bash
-make rollback
-```
+### Testing and Development
+- **pytest**: Testing framework
+- **Poetry**: Dependency management
 
-#### Transaction
+### Code Quality and Formatting
+- **black**: Code formatter
 
-Easy using transaction with `Transactional` decorator
+### Email Services
+- **Mailtrap**: Email testing service (development)
 
-```python
-from core.db import Transactional
+### Logging and Monitoring
+- **loguru**: Python logging made simple
 
-class NewsController(BaseController[News]):
-  @Transactional()
-  async def seed(self):
-    ...
-```
+## License
 
-### Cache
-
-#### Using decorator
-
-```python
-from core.cache import Cache
-
-@Cache.cached(prefix="user", ttl=30 * 24 * 60 * 60)
-async foo() {
-
-}
-```
-
-#### Using `attempt` method
-
-```python
-from core.cache import Cache
-
-@Cache.cached(prefix="user", ttl=30 * 24 * 60 * 60)
-
-async def scrape(url: str) {
-  return await fetch(url)
-}
-
-async def main() {
-  data = await Cache.attempt(
-    key="linkedin-scraper",
-    ttl=60,
-    fn=scrape_linkedin,
-    url="https://www.linkedin.com/"
-  )
-}
-```
-
-### Code quality
-
-- **Check format the code**
-
-```bash
-make check-format
-```
-
-- **Lint the code**
-
-```bash
-make lint
-```
+[MIT License](LICENSE)

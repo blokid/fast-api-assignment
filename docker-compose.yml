@@ -32,9 +32,9 @@ services:
     container_name: postgresql
     image: postgres:12.2-alpine
     environment:
-      - POSTGRES_USER=your_user
-      - POSTGRES_PASSWORD=your_password
-      - POSTGRES_DB=your_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
     volumes:
       - postgresql_data:/var/lib/postgresql/data
     ports:

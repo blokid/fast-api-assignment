@@ -1,5 +1,4 @@
-from sqlalchemy import Column, Integer, String, text
-
+from sqlalchemy import Column, Integer, String, text, Boolean, TIMESTAMP
 from app.core import security
 from app.models.common import DateTimeModelMixin
 from app.models.rwmodel import RWModel
@@ -17,6 +16,9 @@ class User(RWModel, DateTimeModelMixin):
     email = Column(String(256), nullable=False, unique=True)
     salt = Column(String(255), nullable=False)
     hashed_password = Column(String(256), nullable=True)
+    email_verified = Column(Boolean, nullable=False, server_default="false")
+    email_verification_token = Column(String(255), nullable=True)
+    email_verified_at = Column(TIMESTAMP(timezone=True), nullable=True)
 
     def check_password(self, password: str) -> bool:
         return security.verify_password(self.salt + password, self.hashed_password)

@@ -1,7 +1,15 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    constr,
+    validator,
+    constr,
+    ValidationError,
+)
 
 from app.core import security
 from app.schemas.message import ApiResponse
@@ -15,9 +23,7 @@ class UserBase(BaseModel):
     id: int | None = None
     username: str
     email: str
-    created_at: datetime | None = None
     updated_at: datetime | None = None
-    deleted_at: datetime | None = None
 
 
 class UserInDB(UserBase):
@@ -37,10 +43,24 @@ class UserInSignIn(BaseModel):
     email: str
 
 
+class UserInVerification(BaseModel):
+    verification_token: str
+
+
 class UserInCreate(BaseModel):
-    username: str
-    password: str
-    email: str
+    username: constr(min_length=5, max_length=20)
+    password: constr(min_length=8, max_length=128)  # Minimum 8 chars
+    email: EmailStr
+
+    @validator("password")
+    def validate_password(cls, value):
+        if not any(char.isdigit() for char in value):
+            raise ValueError("Password must contain at least one digit")
+        if not any(char.isalpha() for char in value):
+            raise ValueError("Password must contain at least one letter")
+        if len(value) < 8:
+            raise ValueError("Password must be at least 8 characters long")
+        return value
 
 
 class UserInUpdate(UserInCreate):
@@ -71,3 +91,7 @@ class UserResponse(ApiResponse):
     message: str = "User API Response"
     data: UserOutData | list[UserOutData] | UserAuthOutData
     detail: dict[str, Any] | None = {"key": "val"}
+
+
+class SignupResponse(ApiResponse):
+    message: str = "User Signup Response"

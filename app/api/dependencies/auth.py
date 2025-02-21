@@ -104,7 +104,9 @@ async def _get_current_user_optional(
     settings: AppSettings = Depends(get_app_settings),
 ) -> User | None:
     if token:
-        return await _get_current_user(users_repo=users_repo, token=token, settings=settings)
+        return await _get_current_user(
+            users_repo=users_repo, token=token, settings=settings
+        )
 
     return None
 
