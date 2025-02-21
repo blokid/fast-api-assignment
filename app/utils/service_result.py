@@ -2,7 +2,7 @@ import inspect
 
 from fastapi.responses import JSONResponse
 from loguru import logger
-
+import json
 from app.utils import AppExceptionCase
 
 
@@ -31,6 +31,16 @@ class ServiceResult:
 
     def __enter__(self):
         return self.result
+
+    def json(self) -> dict:
+        """Extract and return JSON from JSONResponse."""
+        if isinstance(self.result, JSONResponse):
+            return json.loads(self.result.body.decode("utf-8"))
+        return {}
+
+    def __getitem__(self, key):
+        """Enable dict-like access using result[key]."""
+        return self.json().get(key)
 
     def __exit__(self, *kwargs):
         pass

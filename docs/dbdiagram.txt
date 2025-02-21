@@ -1,0 +1,51 @@
+# Use https://dbdiagram.io/ to visualize
+
+Table users {
+  id int [pk, increment]
+  email varchar(255)
+  password_hash varchar(255)
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table organizations {
+  id int [pk, increment]
+  name varchar(255)
+  created_at timestamp
+  updated_at timestamp
+}
+
+Enum organization_role_enum {
+  admin
+  member
+}
+
+Table organization_memberships {
+  user_id int [ref: > users.id, pk]
+  organization_id int [ref: > organizations.id, pk]
+  role organization_role_enum
+  joined_at timestamp
+}
+
+Table websites {
+  id int [pk, increment]
+  organization_id int [ref: > organizations.id]
+  name varchar(255)
+  url varchar(255) [unique]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Enum website_role_enum {
+  admin
+  member
+}
+
+Table website_memberships {
+  user_id int [ref: > users.id, pk]
+  website_id int [ref: > websites.id, pk]
+  role website_role_enum
+  joined_at timestamp
+}
+
+

@@ -52,38 +52,3 @@ async def read_user_by_id(
     result = await users_service.get_user_by_id(users_repo=users_repo, user_id=user_id)
 
     return await handle_result(result)
-
-
-@router.patch(
-    "",
-    status_code=HTTP_200_OK,
-    response_model=UserResponse,
-    responses=ERROR_RESPONSES,
-    name="user:patch-by-id",
-)
-async def update_user(
-    *,
-    users_service: UsersService = Depends(get_service(UsersService)),
-    users_repo: UsersRepository = Depends(get_repository(UsersRepository)),
-    user_in: UserInUpdate,
-    token_user: User = Depends(get_current_user_auth()),
-) -> UserResponse:
-    result = await users_service.update_user(users_repo=users_repo, token_user=token_user, user_in=user_in)
-    return await handle_result(result)
-
-
-@router.delete(
-    "",
-    status_code=HTTP_200_OK,
-    response_model=UserResponse,
-    responses=ERROR_RESPONSES,
-    name="user:delete-by-id",
-)
-async def delete_user(
-    *,
-    users_service: UsersService = Depends(get_service(UsersService)),
-    users_repo: UsersRepository = Depends(get_repository(UsersRepository)),
-    token_user: User = Depends(get_current_user_auth()),
-) -> UserResponse:
-    result = await users_service.delete_user(users_repo=users_repo, token_user=token_user)
-    return await handle_result(result)

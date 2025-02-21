@@ -25,7 +25,8 @@ class UsersRepository(BaseRepository):
 
     @db_error_handler
     async def get_user_by_email(self, *, email: str) -> User:
-        query = select(User).where(and_(User.email == email, User.deleted_at.is_(None)))
+        query = select(User).where(
+            and_(User.email == email, User.deleted_at.is_(None)))
 
         raw_result = await self.connection.execute(query)
         result = raw_result.fetchone()
@@ -36,7 +37,8 @@ class UsersRepository(BaseRepository):
     async def get_duplicated_user(self, *, user_in: UserInCreate) -> User:
         query = select(User).where(
             and_(
-                or_(User.username == user_in.username, User.email == user_in.email),
+                or_(User.username == user_in.username,
+                    User.email == user_in.email),
                 User.deleted_at.is_(None),
             )
         )
@@ -58,10 +60,11 @@ class UsersRepository(BaseRepository):
         return results
 
     @db_error_handler
-    async def signup_user(self, *, user_in: UserInCreate) -> User:
+    async def signup_user(self, *, user_in: UserInCreate, email_verification_token: str) -> User:
         user_in_db_obj = UserInDB(
             username=user_in.username,
             email=user_in.email,
+            email_verification_token=email_verification_token
         )
         user_in_db_obj.change_password(user_in.password)
 
@@ -93,3 +96,19 @@ class UsersRepository(BaseRepository):
         await self.connection.commit()
         await self.connection.refresh(user)
         return user
+
+    @db_error_handler
+    async def update_user_verification_status(
+        self, *, user_id: int, email_verified: bool
+    ) -> None:
+        query = (
+            User.__table__.update()
+            .where(User.id == user_id)
+            .values(
+                email_verified=email_verified,
+                email_verified_at=func.now() if email_verified else None,
+                updated_at=func.now(),
+            )
+        )
+        await self.connection.execute(query)
+        await self.connection.commit()
